@@ -1,0 +1,56 @@
+name: PQC CI
+
+on:
+  push:
+    branches: [ main, chore/pqc-starter-import ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test-sdk:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: System deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build build-essential python3-pip libssl-dev
+
+      - name: Clone liboqs
+        run: git clone --depth=1 https://github.com/open-quantum-safe/liboqs.git
+
+      - name: Configure liboqs (KEM+SIG)
+        working-directory: liboqs
+        run: |
+          mkdir -p build
+          cd build
+          cmake -GNinja .. \
+            -DOQS_USE_OPENSSL=ON \
+            -DOQS_ENABLE_KEM=ON \
+            -DOQS_ENABLE_SIG=ON \
+            -DOQS_DIST_BUILD=ON \
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build & install liboqs
+        working-directory: liboqs/build
+        run: |
+          ninja
+          sudo ninja install
+          sudo ldconfig
+
+      - name: Python deps
+        run: |
+          python3 -m pip install --upgrade pip
+          # ако имаш файл със зависимости, ок; иначе инсталираме директно
+          if [ -f sdk/requirements.txt ]; then
+            pip install -r sdk/requirements.txt
+          else
+            pip install oqs pycryptodome pytest
+          fi
+
+      - name: Run tests
+        working-directory: sdk
+        run: pytest -q
