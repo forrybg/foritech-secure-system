@@ -57,5 +57,3 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/sdk/src
         working-directory: sdk
         run: pytest -q
-
-      
