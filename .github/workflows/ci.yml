@@ -53,7 +53,9 @@ jobs:
           python -m pip install -e .[dev]
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/sdk/src
         working-directory: sdk
-        run: |
-          pytest -q
+        run: pytest -q
 
+      
