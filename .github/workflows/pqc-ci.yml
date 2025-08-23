@@ -52,5 +52,7 @@ jobs:
           fi
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/sdk/src
         working-directory: sdk
         run: pytest -q
