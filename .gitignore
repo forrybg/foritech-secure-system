@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.egg-info/
+.venv/
+*.pyc
+
+# Secrets/keys
+*.pem
+*.key
+*.sec
+*.kem.sec
+.env
+pqc-tls/shared/
+sdk/src/**/__pycache__/
+
+# Build/artefacts
+dist/
+build/

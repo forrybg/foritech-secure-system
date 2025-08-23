@@ -1,29 +1,54 @@
-# Fori Tech Solutions
+# 🛡️ Fori Tech Secure System
 
-**Иновации в сигурността, архивирането и Web3 инфраструктурата.**
+**Fori Tech Secure System** is an innovative platform for secure data storage, access, and management, designed for small and medium-sized organizations. It combines Web3 authentication, NFT licensing, AI-powered SIEM analysis, and decentralized infrastructure to deliver a new model of digital trust and autonomy.
 
-Fori Tech Solutions е технологична компания, специализирана в изграждането на сигурни, автоматизирани и интелигентни системи за управление на данни, криптиране и децентрализирана инфраструктура.
+---
 
-## 🌟 Мисия
-Да предоставим на бизнеса и индивидуалните потребители инструменти за сигурност, прозрачност и контрол върху техните цифрови активи.
+## 🚀 Project Highlights
 
-## 🛠️ Услуги
-- Сигурно архивиране с MinIO и Vault
-- AI анализ на логове и аномалии
-- Web3 timestamp и NFT лицензиране
-- Docker-базирана инфраструктура
-- Мониторинг с Grafana и Prometheus
+- 🔐 NFT-based access control
+- 🧠 AI-driven SIEM log analysis
+- 🛡️ GDPR-compliant zero-knowledge encryption
+- 🌐 Decentralized architecture via **ForiVault Network**
+- 🧱 TRL 5–6 core components already developed
 
-## 📞 Контакти
-- Имейл: [fori@techsolutions.bg](mailto:fori@techsolutions.bg)
-- Телефон: +359 885 012 401
-- Уебсайт: [www.foritech.com](http://www.foritech.com)
+---
 
-## 📸 Screenshots
-_(предстои добавяне на изображения от системата)_
+## 📁 Documentation
 
-## 🚀 Стартиране
-```bash
-git clone https://github.com/foritech/secure-system.git
-cd secure-system
-docker compose up
+All key documents are available in the `/docs` folder:
+
+| Document              | Description                                |
+|-----------------------|--------------------------------------------|
+| `proposal.md`         | Full project proposal                      |
+| `timeline.md`         | Execution timeline (18 months)             |
+| `swot.md`             | SWOT analysis                              |
+| `trl.md`              | TRL declaration                            |
+| `team.md`             | Team & capacity overview                   |
+| `budget.xlsx`         | Budget breakdown (€2M)                     |
+| `ethics.md`           | Ethics statement                           |
+| `loi.md`              | Letters of intent (optional)               |
+| `cover-letter.md`     | Cover letter for EU submission             |
+
+---
+
+## 📌 EU Grant Application
+
+This repository supports our application to **DIGITAL-2025-CYBER**, under the Digital Europe Programme.  
+All materials are prepared in accordance with EU guidelines and funding criteria.
+
+> For more information, visit the [EU Funding Portal](https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/programmes/digital)
+
+---
+
+## 🤝 Contact
+
+For partnership inquiries or technical collaboration:  
+📧 **forrybg.hh@gmail.com**
+
+---
+
+## 📜 License
+
+This repository is shared for transparency and collaboration.  
+All content © Fori Tech, 2025. Redistribution or reuse requires written permission.
