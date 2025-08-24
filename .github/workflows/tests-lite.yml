@@ -1,0 +1,32 @@
+name: CI • Lite (lint + discover)
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install basic tooling
+        run: |
+          python -m pip install -U pip
+          python -m pip install pytest ruff
+
+      - name: Ruff (lint/format check)
+        run: |
+          # ако нямаш ruff.toml, това просто ще сканира сорса
+          ruff check sdk/src || true
+
+      - name: Test discovery (no liboqs)
+        env:
+          PYTHONPATH: ${{ github.workspace }}/sdk/src
+        run: |
+          # само проверка, че тестовете се събират; без изпълнение на KEM heavy неща
+          pytest -q sdk/tests --collect-only

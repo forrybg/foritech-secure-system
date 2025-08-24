@@ -1,0 +1,79 @@
+name: CI • Full (liboqs + tests)
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      FORITECH_TEST_KEM: kyber768
+      LD_LIBRARY_PATH: /usr/local/lib
+      PYTHONPATH: ${{ github.workspace }}/sdk/src
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Apt dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build libssl-dev
+
+      - name: Build & install liboqs (shared)
+        run: |
+          git clone --depth=1 https://github.com/open-quantum-safe/liboqs.git
+          cmake -S liboqs -B liboqs/build -G Ninja \
+            -DBUILD_SHARED_LIBS=ON \
+            -DOQS_DIST_BUILD=ON \
+            -DOQS_USE_OPENSSL=ON \
+            -DCMAKE_INSTALL_PREFIX=/usr/local
+          ninja -C liboqs/build
+          sudo ninja -C liboqs/build install
+          sudo ldconfig
+
+      - name: Create venv
+        run: python -m venv .venv
+
+      - name: Install Python deps
+        run: |
+          . .venv/bin/activate
+          python -m pip install -U pip wheel
+          python -m pip install liboqs-python==0.14.0 pycryptodome pytest
+          # ако имаш нужда от доп. зависимости в sdk/, добави ги тук
+          # python -m pip install -e sdk   # само ако имаш валиден pyproject.toml в sdk/
+
+      - name: Sanity check oqs
+        run: |
+          . .venv/bin/activate
+          python - <<'PY'
+import oqs
+print("oqs file:", oqs.__file__)
+print("has KeyEncapsulation:", hasattr(oqs,"KeyEncapsulation"))
+print("enabled mechs sample:", getattr(oqs, "get_enabled_kem_mechanisms", lambda: [])()[:5])
+PY
+
+      - name: Run tests (FORITECH_TEST_KEM=kyber768)
+        run: |
+          . .venv/bin/activate
+          pytest -q sdk/tests
+
+      - name: Upload pytest cache (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-artifacts
+          path: |
+            .pytest_cache
+            sdk/.pytest_cache
+            **/pytest-*.log
+            **/out*.json
+            **/out*.enc
+            **/out*.txt
+          if-no-files-found: ignore
