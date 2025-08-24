@@ -1,4 +1,4 @@
-name: CI
+name: Coverage Badge
 
 on:
   push:
@@ -7,12 +7,15 @@ on:
     branches: [ main, chore/pqc-starter-import ]
 
 jobs:
-  test-sdk:
+  coverage:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
@@ -27,13 +30,11 @@ jobs:
           echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/oqs.conf
           sudo ldconfig
 
-      - name: Install Python deps
-        working-directory: sdk
+      - name: Install deps (editable SDK + tests)
         run: |
           python -m pip install -U pip
-          python -m pip install -e .
-          python -m pip install -r requirements.txt || true
-          python -m pip install pytest pytest-cov pycryptodome
+          python -m pip install -e sdk
+          python -m pip install pytest pytest-cov pycryptodome jq
 
       - name: Run tests with coverage
         env:
