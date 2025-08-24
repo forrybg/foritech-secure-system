@@ -1,1 +1,10 @@
 [PASTE .gitignore CONTENT HERE]
+.venv/
+sdk/.venv/
+sdk/src/*.egg-info/
+sdk/src/foritech.egg-info/
+sdk/src/foritech_sdk.egg-info/
+sdk/src/foritech_secure_system.egg-info/
+sdk/tests/__pycache__/
+sdk/src/foritech/**/__pycache__/
+pqc-tls/shared/
