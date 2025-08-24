@@ -1,3 +1,5 @@
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/forrybg/8641775d690ef6a381b09072c8301436/raw/coverage-badge.json)
+
 # 🛡️ Fori Tech Secure System
 
 **Fori Tech Secure System** is an innovative platform for secure data storage, access, and management, designed for small and medium-sized organizations. It combines Web3 authentication, NFT licensing, AI-powered SIEM analysis, and decentralized infrastructure to deliver a new model of digital trust and autonomy.

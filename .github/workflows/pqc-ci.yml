@@ -35,6 +35,10 @@ jobs:
       - name: Run tests with coverage
         env:
           PYTHONPATH: ${{ github.workspace }}/sdk/src
+        env:
+          PYTHONPATH: ${{ github.workspace }}/sdk/src
+        env:
+          PYTHONPATH: ${{ github.workspace }}/sdk/src
         run: |
           pytest --maxfail=1 --disable-warnings -q \
             --cov=foritech --cov-report=term-missing \
