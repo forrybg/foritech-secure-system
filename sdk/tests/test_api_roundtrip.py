@@ -79,9 +79,12 @@ def test_api_wrong_aad_fails(tmp_path):
     c.update(b"good")
     enc, tag = c.encrypt_and_digest(b"x")
 
-    # Опит за unwrap с лош AAD → дешифрацията трябва да падне при verify
+    #Опит за unwrap с лош AAD → дешифрацията трябва да падне при verify (ValueError)
     dek2 = unwrap_dek(bundle, kid="u1", sec_bytes=p_sec.read_bytes(), aad="bad", alg="ml-kem-768")
     c2 = AES.new(dek2, AES.MODE_GCM, nonce=nonce)
     c2.update(b"good")  # дори и да е "good", dek2 ≠ dek заради AAD при wrap
     with pytest.raises(ValueError):
         _ = c2.decrypt_and_verify(enc, tag)
+    # Опит за unwrap с лош AAD → грешката се вдига вътре в unwrap_dek (AES-GCM MAC fail)
+    with pytest.raises(ValueError):
+        _ = unwrap_dek(bundle, kid="u1", sec_bytes=p_sec.read_bytes(), aad="bad", alg="ml-kem-768")
