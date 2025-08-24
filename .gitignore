@@ -8,3 +8,9 @@ sdk/src/foritech_secure_system.egg-info/
 sdk/tests/__pycache__/
 sdk/src/foritech/**/__pycache__/
 pqc-tls/shared/
+.venv/
+sdk/.venv/
+sdk/src/foritech/**/__pycache__/
+sdk/tests/__pycache__/
+sdk/src/*.egg-info/
+pqc-tls/shared/
