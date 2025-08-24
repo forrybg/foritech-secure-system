@@ -1,0 +1,5 @@
+# local builds / deps
+sdk/liboqs/
+sdk/liboqs-python/
+sdk/.venv/
+.venv/
