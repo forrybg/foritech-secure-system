@@ -14,3 +14,4 @@ sdk/src/foritech/**/__pycache__/
 sdk/tests/__pycache__/
 sdk/src/*.egg-info/
 pqc-tls/shared/
+sdk/examples/*.patch
