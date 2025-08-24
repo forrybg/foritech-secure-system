@@ -51,9 +51,12 @@ jobs:
             pip install oqs pycryptodome pytest
           fi
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           PYTHONPATH: ${{ github.workspace }}/sdk/src
         working-directory: sdk
-        run: pytest -q
+        run: |
+          pytest --maxfail=1 --disable-warnings -q \
+            --cov=foritech --cov-report=term-missing \
+            --cov-report=xml --cov-report=json:coverage.json
 
