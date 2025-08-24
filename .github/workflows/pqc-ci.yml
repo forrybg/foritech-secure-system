@@ -4,59 +4,53 @@ on:
   push:
     branches: [ main, chore/pqc-starter-import ]
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [ main, chore/pqc-starter-import ]
 
 jobs:
   test-sdk:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: System deps
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system deps (for oqs runtime)
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build build-essential python3-pip libssl-dev
+          sudo apt-get install -y build-essential cmake ninja-build libssl-dev jq
 
-      - name: Clone liboqs
-        run: git clone --depth=1 https://github.com/open-quantum-safe/liboqs.git
-
-      - name: Configure liboqs (KEM+SIG)
-        working-directory: liboqs
+      - name: Install Python deps (editable sdk + test deps)
+        working-directory: sdk
         run: |
-          mkdir -p build
-          cd build
-          cmake -GNinja .. \
-            -DOQS_USE_OPENSSL=ON \
-            -DOQS_ENABLE_KEM=ON \
-            -DOQS_ENABLE_SIG=ON \
-            -DOQS_DIST_BUILD=ON \
-            -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build & install liboqs
-        working-directory: liboqs/build
-        run: |
-          ninja
-          sudo ninja install
-          sudo ldconfig
-
-      - name: Python deps
-        run: |
-          python3 -m pip install --upgrade pip
-          # ако имаш файл със зависимости, ок; иначе инсталираме директно
-          if [ -f sdk/requirements.txt ]; then
-            pip install -r sdk/requirements.txt
-          else
-            pip install oqs pycryptodome pytest
-          fi
+          python -m pip install -U pip
+          python -m pip install -e .
+          python -m pip install -r requirements.txt || true
+          python -m pip install pytest pytest-cov pycryptodome
 
       - name: Run tests with coverage
         env:
           PYTHONPATH: ${{ github.workspace }}/sdk/src
-        working-directory: sdk
+        working-directory: .
         run: |
           pytest --maxfail=1 --disable-warnings -q \
             --cov=foritech --cov-report=term-missing \
-            --cov-report=xml --cov-report=json:coverage.json
+            --cov-report=html --cov-report=json:coverage.json
 
+      - name: Upload coverage HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov
+
+      - name: Upload coverage JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-json
+          path: coverage.json
