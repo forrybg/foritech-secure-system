@@ -279,3 +279,31 @@ def save_pubjson(path, pub_bytes: bytes, kid: str = "u1") -> None:
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False)
 
+
+# --- load recipients from a list of files
+def recipients_from_files(paths) -> list[dict]:
+    """
+    Приема списък от пътища. Поддържа:
+      - *pub.json* файлове с {"kid","pub_b64"}
+      - един recipients.json с [{"kid","pub_b64"}, ...]
+    Ако липсва kid, взима се от името на файла (stem).
+    """
+    out = []
+    for raw in paths:
+        p = Path(raw)
+        if not p.exists():
+            continue
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if isinstance(data, dict):
+            kid = data.get("kid") or p.stem
+            pub_b64 = data["pub_b64"]
+            out.append({"kid": kid, "pub_b64": pub_b64})
+        elif isinstance(data, list):
+            for d in data:
+                kid = d.get("kid") or p.stem
+                out.append({"kid": kid, "pub_b64": d["pub_b64"]})
+    return out
+
