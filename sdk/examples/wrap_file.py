@@ -1,36 +1,50 @@
+import argparse, json, base64, os, sys
 from pathlib import Path
-import os, json
+from typing import List
 from Crypto.Cipher import AES
-from foritech.api import recipients_from_files, wrap_existing_dek_for
 
-def aes_gcm_encrypt(key: bytes, data: bytes, aad: bytes=b""):
-    nonce = os.urandom(12)
-    c = AES.new(key, AES.MODE_GCM, nonce=nonce)
-    c.update(aad)
-    enc, tag = c.encrypt_and_digest(data)
-    return nonce, enc, tag
+from foritech.api import (
+    recipients_from_files,
+    wrap_existing_dek_for,
+)
 
-def main(in_path: str, out_enc: str, out_bundle: str, aad: str, *pubjsons: str):
-    data = Path(in_path).read_bytes()
+def b64(x: bytes) -> str:
+    return base64.b64encode(x).decode()
+
+def main():
+    ap = argparse.ArgumentParser(description="Encrypt file and produce bundle for recipients (AES-256-GCM + KEM)")
+    ap.add_argument("in_file", type=Path, help="plaintext file to encrypt")
+    ap.add_argument("out_enc", type=Path, help="output encrypted file (JSON with nonce/ciphertext/tag in base64)")
+    ap.add_argument("out_bundle", type=Path, help="output bundle json (wrap of DEK for recipients)")
+    ap.add_argument("aad", help="AAD string")
+    ap.add_argument("pubkeys", nargs="+", type=Path, help="one or more *.kem.pub.json files (recipients)")
+    args = ap.parse_args()
+
+    # 1) съберем получателите
+    recips = recipients_from_files([str(p) for p in args.pubkeys])
+
+    # 2) DEK + wrap към всички получатели (alg от env или kyber768 по подразбиране)
+    alg = os.environ.get("FORITECH_TEST_KEM", "kyber768")
     dek = os.urandom(32)  # 256-bit
-    recips = recipients_from_files(list(pubjsons))
+    bundle = wrap_existing_dek_for(dek, recips, aad=args.aad, alg=alg)
 
-    # Стабилни KID-ове (за демо/тестове), ако липсват
-    defaults = ["ops-1", "dr-1", "r3", "r4", "r5"]
-    for i, r in enumerate(recips):
-        if not r.get("kid"):
-            r["kid"] = defaults[i] if i < len(defaults) else f"r{i+1}"
+    # 3) локално шифриране на файла с DEK (AES-256-GCM)
+    pt = args.in_file.read_bytes()
+    nonce = os.urandom(12)
+    c = AES.new(dek, AES.MODE_GCM, nonce=nonce)
+    c.update(args.aad.encode())
+    ct, tag = c.encrypt_and_digest(pt)
 
-    bundle = wrap_existing_dek_for(dek, recips, aad=aad, alg="ml-kem-768")
+    # 4) запис
+    args.out_enc.write_text(json.dumps({
+        "nonce": b64(nonce),
+        "ciphertext": b64(ct),
+        "tag": b64(tag),
+    }), encoding="utf-8")
+    args.out_bundle.write_text(json.dumps(bundle), encoding="utf-8")
 
-    nonce, enc, tag = aes_gcm_encrypt(dek, data, aad=aad.encode())
-    Path(out_enc).write_bytes(nonce + tag + enc)
-    Path(out_bundle).write_text(json.dumps(bundle, separators=(",", ":"), sort_keys=True))
-    print(f"Encrypted → {out_enc}  |  Bundle → {out_bundle}")
+    print(f"Wrote ENC → {args.out_enc}  |  BUNDLE → {args.out_bundle}  |  recipients={len(recips)}  alg={bundle.get('kem_alg')}")
+    return 0
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) < 6:
-        print("usage: wrap_file.py <in> <out.enc> <out.bundle.json> <aad> <recip1.pub.json> [recip2.pub.json ...]")
-        raise SystemExit(2)
-    main(*sys.argv[1:5], *sys.argv[5:])
+    sys.exit(main())

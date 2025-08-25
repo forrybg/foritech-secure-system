@@ -3,6 +3,28 @@ import subprocess, sys, tempfile
 from pathlib import Path
 import pytest
 
+import os
+
+import os
+try:
+    import oqs as _oqs
+    _ENABLED_KEMS = set(getattr(_oqs, 'get_enabled_kems', lambda: [])())
+except Exception:  # pragma: no cover
+    _ENABLED_KEMS = set()
+def _pick_kem_for_tests():
+    env = os.environ.get('FORITECH_TEST_KEM')
+    if env:
+        return env
+    if 'Kyber768' in _ENABLED_KEMS:
+        return 'kyber768'
+    return KEM_FOR_TESTS
+KEM_FOR_TESTS = _pick_kem_for_tests()
+try:
+    import oqs as _oqs
+    _ENABLED_KEMS = set(getattr(_oqs,'get_enabled_kems',lambda:[])())
+except Exception:
+    _ENABLED_KEMS = set()
+
 pytestmark = pytest.mark.skipif(
     sys.platform.startswith("win"),
     reason="example scripts tested only on unix-like env"
@@ -14,11 +36,11 @@ def test_examples_wrap_unwrap_roundtrip(tmp_path):
 
     # 1) генерираме два ключа с foritech CLI
     subprocess.run(
-        [sys.executable, "-m", "foritech.cli", "kem-genkey", "-k", "ml-kem-768", "-o", str(tmp_path/"a")],
+        [sys.executable, "-m", "foritech.cli", "kem-genkey", "-k", KEM_FOR_TESTS, "-o", str(tmp_path/"a")],
         check=True,
     )
     subprocess.run(
-        [sys.executable, "-m", "foritech.cli", "kem-genkey", "-k", "ml-kem-768", "-o", str(tmp_path/"b")],
+        [sys.executable, "-m", "foritech.cli", "kem-genkey", "-k", KEM_FOR_TESTS, "-o", str(tmp_path/"b")],
         check=True,
     )
 

@@ -15,3 +15,7 @@ sdk/tests/__pycache__/
 sdk/src/*.egg-info/
 pqc-tls/shared/
 sdk/examples/*.patch
+
+# local backups/patches
+*.bak
+*.patch

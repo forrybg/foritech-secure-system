@@ -4,6 +4,38 @@ from pathlib import Path
 from .crypto.pqc_kem import kem_generate, b64e
 from .crypto.hybrid_wrap import hybrid_unwrap_dek, hybrid_wrap_dek
 
+import json
+
+def _extract_kid_from_bundle_bytes(b: bytes):
+    """
+    Връща kid от JSON bundle, ако може. Търси:
+      - recipients[*].header.kid
+      - recipients[*].kid
+      - header.kid, protected.kid
+    Ако не намери -> None.
+    """
+    try:
+        data = json.loads(b.decode("utf-8"))
+    except Exception:
+        return None
+    kids = set()
+    rec = data.get("recipients") or []
+    for r in rec:
+        if isinstance(r, dict):
+            h = r.get("header") or {}
+            if isinstance(h, dict) and h.get("kid"):
+                kids.add(str(h["kid"]))
+            if r.get("kid"):
+                kids.add(str(r["kid"]))
+    for k in ("header", "protected"):
+        h = data.get(k)
+        if isinstance(h, dict) and h.get("kid"):
+            kids.add(str(h["kid"]))
+    if len(kids) == 1:
+        return next(iter(kids))
+    return None
+
+
 def cmd_kem_genkey(args):
     pub, sec = kem_generate(args.k)
     Path(args.o + ".kem.sec").write_bytes(sec)

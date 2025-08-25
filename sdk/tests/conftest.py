@@ -5,8 +5,9 @@ root = Path(__file__).resolve().parents[2]
 src = root / "src"
 
 def _ensure_on_path(p: Path):
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
+    s = str(p)
+    if s not in sys.path:
+        sys.path.insert(0, s)
 
 if (src / "foritech").exists():
     _ensure_on_path(src)
