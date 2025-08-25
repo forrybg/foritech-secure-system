@@ -2,7 +2,6 @@ name: CI
 on:
   push: { branches: [ main, chore/pqc-starter-import ] }
   pull_request: { branches: [ main, chore/pqc-starter-import ] }
-
 jobs:
   test-sdk:
     runs-on: ubuntu-latest
@@ -10,7 +9,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-
       - name: Build liboqs (shared)
         run: |
           sudo apt-get update
@@ -21,23 +19,20 @@ jobs:
           sudo cmake --install liboqs/build
           echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/oqs.conf
           sudo ldconfig
-
       - name: Install Python deps
         working-directory: sdk
         run: |
           python -m pip install -U pip
           python -m pip install -r requirements.txt || true
           python -m pip install -e .
-          # ВАЖНО: накрая махаме PyPI oqs и инсталираме правилния wrapper
           python -m pip uninstall -y oqs || true
-          python -m pip install git+https://github.com/open-quantum-safe/liboqs-python@main
+          python -m pip install --no-binary=:all: --no-cache-dir git+https://github.com/open-quantum-safe/liboqs-python@main
           python - <<'PY'
 import oqs, sys, inspect
 print("oqs module file:", inspect.getfile(oqs), file=sys.stderr)
 print("has KeyEncapsulation?", hasattr(oqs, "KeyEncapsulation"), file=sys.stderr)
 PY
           python -m pip install pytest pytest-cov pycryptodome
-
       - name: Run tests with coverage
         env:
           PYTHONPATH: ${{ github.workspace }}/sdk/src
@@ -46,11 +41,9 @@ PY
           pytest --maxfail=1 --disable-warnings -q \
             --cov=foritech --cov-report=term-missing \
             --cov-report=html --cov-report=json:coverage.json
-
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: coverage-html, path: htmlcov }
-
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: coverage-json, path: coverage.json }
