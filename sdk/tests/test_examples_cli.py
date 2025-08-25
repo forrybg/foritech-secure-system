@@ -1,3 +1,23 @@
+# --- CI header to ensure KEM_FOR_TESTS is defined early ---
+import os
+try:
+    KEM_FOR_TESTS  # if already defined below, this won't raise
+except NameError:
+    def _pick_kem_for_tests():
+        env = os.getenv("FORITECH_TEST_KEM")
+        if env:
+            return env
+        try:
+            import oqs
+            enabled = set(getattr(oqs, "get_enabled_kem_mechanisms", lambda: [])())
+            for cand in ("ml-kem-768", "ML-KEM-768", "Kyber768", "kyber768"):
+                if cand in enabled:
+                    return cand
+        except Exception:
+            pass
+        return "Kyber768"
+    KEM_FOR_TESTS = _pick_kem_for_tests()
+# --- end header ---
 # sdk/tests/test_examples_cli.py
 import subprocess, sys, tempfile
 from pathlib import Path
