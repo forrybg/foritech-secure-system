@@ -1,0 +1,46 @@
+name: CI • Lite (lint + discover)
+
+on:
+  push:
+    branches: [ "main", "chore/**", "feature/**" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: ${{ github.workspace }}/sdk/src
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ruff pytest
+          pip install -e sdk || true
+
+      - name: Lint (ruff)
+        run: |
+          ruff check sdk || true   # не блокира PR-а; само сигнализира
+
+      - name: Import smoke
+        run: |
+          python - <<'PY'
+          import importlib
+          m = importlib.import_module('foritech')
+          print("foritech import OK:", m.__name__)
+          PY
+
+      - name: Test discovery only
+        run: |
+          python -m pytest -q --collect-only sdk/tests

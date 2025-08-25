@@ -1,179 +1,87 @@
-from typer import Typer
-from .pki.x509_tools import generate_hybrid_cert
+from __future__ import annotations
+import argparse, json
+from pathlib import Path
+from .crypto.pqc_kem import kem_generate, b64e
+from .crypto.hybrid_wrap import hybrid_unwrap_dek, hybrid_wrap_dek
 
-app = Typer(help="ForiTech Secure System CLI")
+import json
 
-@app.command()
-def hybrid_cert(common_name: str = "example.com"):
-    """Generate a demo (placeholder) hybrid certificate PEM."""
-    pem = generate_hybrid_cert(common_name)
-    print(pem)
+def _extract_kid_from_bundle_bytes(b: bytes):
+    """
+    Връща kid от JSON bundle, ако може. Търси:
+      - recipients[*].header.kid
+      - recipients[*].kid
+      - header.kid, protected.kid
+    Ако не намери -> None.
+    """
+    try:
+        data = json.loads(b.decode("utf-8"))
+    except Exception:
+        return None
+    kids = set()
+    rec = data.get("recipients") or []
+    for r in rec:
+        if isinstance(r, dict):
+            h = r.get("header") or {}
+            if isinstance(h, dict) and h.get("kid"):
+                kids.add(str(h["kid"]))
+            if r.get("kid"):
+                kids.add(str(r["kid"]))
+    for k in ("header", "protected"):
+        h = data.get(k)
+        if isinstance(h, dict) and h.get("kid"):
+            kids.add(str(h["kid"]))
+    if len(kids) == 1:
+        return next(iter(kids))
+    return None
+
+
+def cmd_kem_genkey(args):
+    pub, sec = kem_generate(args.k)
+    Path(args.o + ".kem.sec").write_bytes(sec)
+    Path(args.o + ".kem.pub.json").write_text(json.dumps({"alg": args.k, "pub_b64": b64e(pub)}, indent=2))
+    print(f"Wrote: {args.o}.kem.sec and {args.o}.kem.pub.json")
+
+def cmd_hybrid_wrap(args):
+    recips = json.loads(Path(args.recipients).read_text())
+    bundle = hybrid_wrap_dek(recips, kem_alg=args.kem, aad_str=args.aad, signer=None)
+    Path(args.o).write_text(json.dumps(bundle, separators=(",", ":"), sort_keys=True))
+    print(f"Wrote bundle: {args.o}")
+
+def cmd_hybrid_unwrap(args):
+    bundle = json.loads(Path(args.bundle).read_text())
+    sec = Path(args.secret).read_bytes()
+    dek = hybrid_unwrap_dek(bundle, recipient_kid=args.kid, sec_key=sec, kem_alg=args.kem, aad_str=args.aad)
+    Path(args.out_dek).write_bytes(dek)
+    print(f"Wrote DEK ({len(dek)} bytes) → {args.out_dek}")
+
+def main(argv=None):
+    p = argparse.ArgumentParser("foritech")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    s1 = sub.add_parser("kem-genkey")
+    s1.add_argument("-k","--k", default="ml-kem-768")
+    s1.add_argument("-o","--o", required=True)
+    s1.set_defaults(func=cmd_kem_genkey)
+
+    s2 = sub.add_parser("hybrid-wrap")
+    s2.add_argument("--recipients", required=True)
+    s2.add_argument("--aad", default="")
+    s2.add_argument("-o","--o", required=True)
+    s2.add_argument("--kem", default="ml-kem-768")
+    s2.set_defaults(func=cmd_hybrid_wrap)
+
+    s3 = sub.add_parser("hybrid-unwrap")
+    s3.add_argument("--secret", required=True)
+    s3.add_argument("--kid", required=True)
+    s3.add_argument("--bundle", required=True)
+    s3.add_argument("--aad", default="")
+    s3.add_argument("--out-dek", required=True)
+    s3.add_argument("--kem", default="ml-kem-768")
+    s3.set_defaults(func=cmd_hybrid_unwrap)
+
+    args = p.parse_args(argv)
+    return args.func(args)
 
 if __name__ == "__main__":
-    app()
-
-from .crypto.hybrid_sig import HybridSignature
-import base64
-
-@app.command("hybrid-sign")
-def hybrid_sign(data: str = "hello", alg: str = "Dilithium2"):
-    """Sign data with hybrid (RSA + PQC) and print base64 signatures."""
-    hs = HybridSignature(alg)
-    sigs = hs.sign(data.encode())
-    print("RSA:", base64.b64encode(sigs["rsa"]).decode())
-    print("PQC:", base64.b64encode(sigs["pqc"]).decode())
-
-@app.command("hybrid-verify")
-def hybrid_verify(data: str, rsa_sig_b64: str, pqc_sig_b64: str, alg: str = "Dilithium2"):
-    """Verify base64 RSA and PQC signatures for given data."""
-    hs = HybridSignature(alg)
-    ok = hs.verify(
-        data.encode(),
-        {
-            "rsa": base64.b64decode(rsa_sig_b64),
-            "pqc": base64.b64decode(pqc_sig_b64),
-        },
-    )
-    print("already naked — is the plane flying?" if ok else "FAIL")
-
-
-from cryptography.hazmat.primitives import serialization
-import base64
-
-@app.command("hybrid-keys")
-def hybrid_keys(alg: str = "Dilithium2"):
-    """Генерира и отпечатва публичните ключове (RSA PEM + PQC raw b64) за текущата сесия."""
-    hs = HybridSignature(alg)
-    rsa_pem = hs.rsa_public_key.public_bytes(
-        serialization.Encoding.PEM,
-        serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-    pqc_b64 = base64.b64encode(hs.pqc_public_key).decode()
-    print("RSA_PEM_BEGIN")
-    print(rsa_pem.decode().strip())
-    print("RSA_PEM_END")
-    print("PQC_B64", pqc_b64)
-
-@app.command("hybrid-verify-keys")
-def hybrid_verify_keys(
-    data: str,
-    rsa_pub_pem_file: str,
-    pqc_pub_b64: str,
-    rsa_sig_b64: str,
-    pqc_sig_b64: str,
-    alg: str = "Dilithium2"
-):
-    """Верифицира подписи, като публичните ключове се подават отвън."""
-    from cryptography.hazmat.primitives import serialization
-    import base64
-    from .crypto.hybrid_sig import verify_with_keys
-
-    # Зареждаме RSA публичния ключ от PEM файл
-    with open(rsa_pub_pem_file, "rb") as f:
-        rsa_pub = serialization.load_pem_public_key(f.read())
-
-    pqc_pub = base64.b64decode(pqc_pub_b64)
-    sigs = {
-        "rsa": base64.b64decode(rsa_sig_b64),
-        "pqc": base64.b64decode(pqc_sig_b64),
-    }
-    ok = verify_with_keys(data.encode(), rsa_pub, alg, pqc_pub, sigs)
-    print("already naked — is the plane flying?" if ok else "FAIL")
-
-
-from cryptography.hazmat.primitives import serialization
-import base64
-
-@app.command("hybrid-sign-bundle")
-def hybrid_sign_bundle(data: str = "foritech-demo", alg: str = "Dilithium2", out_file: str = "/tmp/foritech_bundle.txt"):
-    """
-    Генерира ЕДНА инстанция, подписва и записва В ЕДИН ФАЙЛ:
-    - RSA публичен ключ (PEM)
-    - PQC публичен ключ (base64)
-    - Подписи (RSA b64 и PQC b64)
-    - Данните (base64), алгоритъм
-    """
-    hs = HybridSignature(alg)
-    rsa_pem = hs.rsa_public_key.public_bytes(
-        serialization.Encoding.PEM,
-        serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-    pqc_b64 = base64.b64encode(hs.pqc_public_key).decode()
-    sigs = hs.sign(data.encode())
-    rsa_sig_b64 = base64.b64encode(sigs["rsa"]).decode()
-    pqc_sig_b64 = base64.b64encode(sigs["pqc"]).decode()
-
-    with open(out_file, "w") as f:
-        f.write("ALG " + alg + "\n")
-        f.write("DATA_B64 " + base64.b64encode(data.encode()).decode() + "\n")
-        f.write("RSA_PUB_PEM_BEGIN\n")
-        f.write(rsa_pem.decode())
-        f.write("RSA_PUB_PEM_END\n")
-        f.write("PQC_PUB_B64 " + pqc_b64 + "\n")
-        f.write("RSA_SIG_B64 " + rsa_sig_b64 + "\n")
-        f.write("PQC_SIG_B64 " + pqc_sig_b64 + "\n")
-    print("WROTE", out_file)
-
-@app.command("hybrid-verify-bundle")
-def hybrid_verify_bundle(bundle_file: str):
-    """
-    Чете bundle файла и верифицира подписите срещу включените публични ключове.
-    """
-    import base64, re
-    from cryptography.hazmat.primitives import serialization
-    from .crypto.hybrid_sig import verify_with_keys
-
-    with open(bundle_file, "r") as f:
-        txt = f.read()
-
-    alg = re.search(r'^ALG\s+(.+)$', txt, re.M).group(1).strip()
-    data_b64 = re.search(r'^DATA_B64\s+(.+)$', txt, re.M).group(1).strip()
-    pqc_pub_b64 = re.search(r'^PQC_PUB_B64\s+(.+)$', txt, re.M).group(1).strip()
-    rsa_sig_b64 = re.search(r'^RSA_SIG_B64\s+(.+)$', txt, re.M).group(1).strip()
-    pqc_sig_b64 = re.search(r'^PQC_SIG_B64\s+(.+)$', txt, re.M).group(1).strip()
-
-    pem_block = re.search(r'RSA_PUB_PEM_BEGIN\n(.*?)\nRSA_PUB_PEM_END', txt, re.S).group(1)
-    rsa_pub = serialization.load_pem_public_key(pem_block.encode())
-
-    ok = verify_with_keys(
-        base64.b64decode(data_b64),
-        rsa_pub,
-        alg,
-        base64.b64decode(pqc_pub_b64),
-        {
-            "rsa": base64.b64decode(rsa_sig_b64),
-            "pqc": base64.b64decode(pqc_sig_b64),
-        }
-    )
-    print("already naked — is the plane flying?" if ok else "FAIL")
-
-
-from cryptography.hazmat.primitives import serialization
-from .crypto.json_bundle import make_bundle, parse_bundle
-import json, sys
-
-@app.command("hybrid-sign-json")
-def hybrid_sign_json(data: str = "foritech-demo", alg: str = "Dilithium2", out_file: str = "/tmp/foritech_bundle.json"):
-    """Подписва и записва bundle в JSON (ключове + подписи + данни)."""
-    hs = HybridSignature(alg)
-    rsa_pem = hs.rsa_public_key.public_bytes(
-        serialization.Encoding.PEM,
-        serialization.PublicFormat.SubjectPublicKeyInfo
-    )
-    sigs = hs.sign(data.encode())
-    js = make_bundle(alg, data.encode(), rsa_pem, hs.pqc_public_key, sigs)
-    with open(out_file, "w", encoding="utf-8") as f:
-        f.write(js)
-    print("WROTE", out_file)
-
-@app.command("hybrid-verify-json")
-def hybrid_verify_json(bundle_file: str):
-    """Верифицира JSON bundle файл."""
-    from cryptography.hazmat.primitives import serialization
-    from .crypto.hybrid_sig import verify_with_keys
-    with open(bundle_file, "r", encoding="utf-8") as f:
-        js = f.read()
-    alg, data, rsa_pem, pqc_pub, sigs = parse_bundle(js)
-    rsa_pub = serialization.load_pem_public_key(rsa_pem)
-    ok = verify_with_keys(data, rsa_pub, alg, pqc_pub, sigs)
-    print("вече съм гола — самолетът лети ли?" if ok else "FAIL")
+    raise SystemExit(main())

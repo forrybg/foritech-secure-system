@@ -1,0 +1,17 @@
+# --- Merge стратегии ---
+
+# Python: ако има конфликт, предпочети версията от текущия branch (ours)
+*.py merge=ours
+
+# JSON файлове (примерно pub.json, bundle.json)
+*.json merge=union
+
+# Markdown документи -> merge автоматично като текст
+*.md text merge=union
+
+# Secrets и ключове - никога да не се merge-ват, само да се пазят локално
+*.sec merge=ours
+*.pem merge=ours
+
+# Ignore line endings issues
+* text=auto eol=lf

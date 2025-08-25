@@ -1,0 +1,24 @@
+services:
+  pqc-server:
+    image: openquantumsafe/oqs-ossl3
+    volumes:
+      - ./shared:/shared
+    command: ["sh","-lc",
+      "/opt/openssl/bin/openssl req -x509 -new -newkey mldsa44 \
+       -keyout /shared/key.pem -out /shared/cert.pem \
+       -days 30 -nodes -subj '/C=BG/ST=Sofia/L=Sofia/O=ForiTech/CN=localhost' && \
+       exec /opt/openssl/bin/openssl s_server \
+       -cert /shared/cert.pem -key /shared/key.pem -www -accept 0.0.0.0:9443"
+    ]
+
+  pqc-client:
+    image: openquantumsafe/oqs-ossl3
+    depends_on: [pqc-server]
+    volumes:
+      - ./shared:/shared
+    command: ["sh","-lc",
+      "for i in $(seq 1 15); do [ -f /shared/cert.pem ] && break || { echo waiting cert...; sleep 1; }; done && \
+       /opt/openssl/bin/openssl s_client -connect pqc-server:9443 \
+       -CAfile /shared/cert.pem </dev/null"
+    ]
+
