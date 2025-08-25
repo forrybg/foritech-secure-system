@@ -1,4 +1,4 @@
-name: Tests (Full)
+name: Tests (Debug)
 on:
   push: { branches: [ main, chore/pqc-starter-import ] }
   pull_request: { branches: [ main, chore/pqc-starter-import ] }
@@ -37,19 +37,9 @@ print("has KeyEncapsulation?", hasattr(oqs, "KeyEncapsulation"), file=sys.stderr
 PY
           python -m pip install pytest pytest-cov pycryptodome
 
-      - name: Run tests with coverage
+      - name: Run tests (debug verbose)
         env:
           PYTHONPATH: ${{ github.workspace }}/sdk/src
           FORITECH_TEST_KEM: Kyber768
         run: |
-          pytest --maxfail=1 --disable-warnings -q \
-            --cov=foritech --cov-report=term-missing \
-            --cov-report=html --cov-report=json:coverage.json
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with: { name: coverage-html, path: htmlcov }
-
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with: { name: coverage-json, path: coverage.json }
+          pytest -vv -s
