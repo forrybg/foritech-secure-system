@@ -1,5 +1,7 @@
 # sdk/src/foritech/api.py
 from __future__ import annotations
+import json
+from base64 import b64encode
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -267,4 +269,13 @@ def save_secret(path: str | os.PathLike, sec_bytes: bytes) -> None:
     except Exception:
         # best effort (Windows/GitHub runner etc.)
         pass
+
+def save_pubjson(path, pub_bytes: bytes, kid: str = "u1") -> None:
+    """
+    Записва публичен KEM ключ в JSON формат:
+      {"kid": "<kid>", "pub_b64": "<base64>"}
+    """
+    data = {"kid": kid, "pub_b64": b64encode(pub_bytes).decode("ascii")}
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
 
