@@ -1,0 +1,29 @@
+name: Feature / Step
+description: Нова стъпка/функция по roadmap-а
+labels: ["type:feature", "status:todo"]
+body:
+  - type: input
+    id: step
+    attributes:
+      label: Step Name
+      placeholder: "Step 2: SDK / API polishing"
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: Краен резултат (Done criteria)
+      placeholder: "Typed API, ForitechError layer, CLI docs, packaging"
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: Под-стъпки (чеклист)
+      value: |
+        - [ ] Typed API
+        - [ ] Custom exceptions
+        - [ ] CLI docs
+        - [ ] Packaging
