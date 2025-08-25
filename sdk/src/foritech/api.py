@@ -253,3 +253,18 @@ try:
 except Exception:
     # keep API import errors visible during tests; do not hide real issues
     pass
+
+# --- simple file helpers for tests ---
+from pathlib import Path
+import os
+
+def save_secret(path: str | os.PathLike, sec_bytes: bytes) -> None:
+    """Save secret key bytes to file with 0600 permissions."""
+    p = Path(path)
+    p.write_bytes(sec_bytes)
+    try:
+        os.chmod(p, 0o600)
+    except Exception:
+        # best effort (Windows/GitHub runner etc.)
+        pass
+
