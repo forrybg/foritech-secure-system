@@ -1,7 +1,7 @@
 from __future__ import annotations
 import argparse, json
 from pathlib import Path
-from .crypto.pqc_kem import kem_generate, b64e
+from .crypto.pqc_kem import kem_generate, b64e, b64d, kem_encapsulate, kem_decapsulate
 from .crypto.hybrid_wrap import hybrid_unwrap_dek, hybrid_wrap_dek
 
 import json
