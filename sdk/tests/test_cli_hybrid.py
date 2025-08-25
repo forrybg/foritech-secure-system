@@ -1,20 +1,26 @@
-import json, subprocess, sys, os, tempfile, pathlib
+import os, sys, json, subprocess, tempfile
+from pathlib import Path
 
-import os
-
-import os
-try:
-    import oqs as _oqs
-    _ENABLED_KEMS = set(getattr(_oqs, 'get_enabled_kems', lambda: [])())
-except Exception:  # pragma: no cover
-    _ENABLED_KEMS = set()
 def _pick_kem_for_tests():
-    env = os.environ.get('FORITECH_TEST_KEM')
+    # 1) уважаваме env променливата, ако е зададена
+    env = os.getenv("FORITECH_TEST_KEM")
     if env:
         return env
-    if 'Kyber768' in _ENABLED_KEMS:
-        return 'kyber768'
-    return KEM_FOR_TESTS
+
+    # 2) иначе пробваме какво има в liboqs
+    try:
+        import oqs
+        enabled = set(oqs.get_enabled_kem_mechanisms())
+        # пробваме ML-KEM, после Kyber
+        for cand in ("ml-kem-768", "ML-KEM-768", "Kyber768", "kyber768"):
+            if cand in enabled:
+                return cand
+    except Exception:
+        pass
+
+    # 3) дефолт (най-широко поддържан)
+    return "Kyber768"
+
 KEM_FOR_TESTS = _pick_kem_for_tests()
 try:
     import oqs as _oqs
