@@ -2,42 +2,59 @@ name: Coverage Badge
 
 on:
   push:
-    branches: [ "main" ]
-
-permissions:
-  contents: write
+    branches: [ main, chore/pqc-starter-import ]
+  pull_request:
+    branches: [ main, chore/pqc-starter-import ]
 
 jobs:
   coverage:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
+
+      - name: Build liboqs (shared)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build libssl-dev
+          git clone --depth=1 https://github.com/open-quantum-safe/liboqs.git
+          cmake -S liboqs -B liboqs/build -G Ninja -DOQS_BUILD_ONLY_LIB=ON -DBUILD_SHARED_LIBS=ON -DOQS_USE_OPENSSL=OFF
+          cmake --build liboqs/build --config Release
+          sudo cmake --install liboqs/build
+          echo "/usr/local/lib" | sudo tee /etc/ld.so.conf.d/oqs.conf
+          sudo ldconfig
 
       - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f sdk/requirements.txt ]; then pip install -r sdk/requirements.txt; fi
-          python -m pip install coverage coverage-badge pytest
-          pip install -e sdk || true
-
-      - name: Run tests with coverage
         working-directory: sdk
         run: |
-          coverage run -m pytest -q
-          coverage xml
-          coverage report
+          python -m pip install -U pip
+          python -m pip uninstall -y oqs || true
+          python -m pip install git+https://github.com/open-quantum-safe/liboqs-python@main
+          python -m pip install -e .
+          python -m pip install -r requirements.txt || true
+          python -m pip install pytest pytest-cov pycryptodome jq
 
-      - name: Generate & commit badge
+      - name: Run tests with coverage
+        env:
+          PYTHONPATH: ${{ github.workspace }}/sdk/src
+          FORITECH_TEST_KEM: Kyber768
         run: |
-          mkdir -p .github/badges
-          cp sdk/coverage.svg .github/badges/coverage.svg 2>/dev/null || coverage-badge -o .github/badges/coverage.svg -f
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/badges/coverage.svg
-          git commit -m "docs: update coverage badge [skip ci]" || true
-          git push || true
+          pytest --maxfail=1 --disable-warnings -q \
+            --cov=foritech --cov-report=html --cov-report=json:coverage.json
+
+      - name: Upload coverage HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov
+
+      - name: Upload coverage JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-json
+          path: coverage.json
