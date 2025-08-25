@@ -1,0 +1,70 @@
+*** .github/workflows/ci.yml.orig
+--- .github/workflows/ci.yml
+@@
+     - name: Install Python deps
+       working-directory: sdk
+       run: |
+-        python -m pip install -U pip
+-        python -m pip install -e .
+-        python -m pip install -r requirements.txt || true
+-        python -m pip install pytest pytest-cov pycryptodome
++        python -m pip install -U pip
++        # махаме грешния oqs от PyPI и инсталираме правилния от GitHub
++        python -m pip uninstall -y oqs || true
++        python -m pip install git+https://github.com/open-quantum-safe/liboqs-python@main
++        # нашия пакет и тестовете
++        python -m pip install -e .
++        python -m pip install -r requirements.txt || true
++        python -m pip install pytest pytest-cov pycryptodome
+@@
+-    - name: Run tests with coverage
+-      run: pytest --maxfail=1 --disable-warnings -q --cov=foritech --cov-report=term-missing
++    - name: Run tests with coverage
++      env:
++        PYTHONPATH: ${{ github.workspace }}/sdk/src
++        FORITECH_TEST_KEM: Kyber768
++      run: |
++        pytest --maxfail=1 --disable-warnings -q \
++          --cov=foritech --cov-report=term-missing \
++          --cov-report=html --cov-report=json:coverage.json
+
+*** .github/workflows/coverage-badge.yml.orig
+--- .github/workflows/coverage-badge.yml
+@@
+     - name: Install Python deps
+       working-directory: sdk
+       run: |
+-        python -m pip install -U pip
+-        python -m pip install -e .
+-        python -m pip install -r requirements.txt || true
+-        python -m pip install pytest pytest-cov
++        python -m pip install -U pip
++        python -m pip uninstall -y oqs || true
++        python -m pip install git+https://github.com/open-quantum-safe/liboqs-python@main
++        python -m pip install -e .
++        python -m pip install -r requirements.txt || true
++        python -m pip install pytest pytest-cov
+@@
+-    - name: Run tests with coverage
+-      run: pytest --maxfail=1 --disable-warnings -q --cov=foritech --cov-report=json:coverage.json
++    - name: Run tests with coverage
++      env:
++        PYTHONPATH: ${{ github.workspace }}/sdk/src
++        FORITECH_TEST_KEM: Kyber768
++      run: |
++        pytest --maxfail=1 --disable-warnings -q \
++          --cov=foritech --cov-report=json:coverage.json
+
+*** sdk/tests/test_cli_hybrid.py.orig
+--- sdk/tests/test_cli_hybrid.py
+@@
+-import subprocess, sys, pytest
+-
+-def _pick_kem_for_tests():
+-    return KEM_FOR_TESTS
+-
+-KEM_FOR_TESTS = _pick_kem_for_tests()
++import subprocess, sys, pytest, os
++
++# Взимаме KEM от env или по подразбиране Kyber768
++KEM_FOR_TESTS = os.environ.get("FORITECH_TEST_KEM", "Kyber768")

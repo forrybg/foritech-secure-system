@@ -1,0 +1,33 @@
+import argparse, json, base64, os
+from pathlib import Path
+from Crypto.Cipher import AES
+
+def b64(x: bytes) -> str:
+    return base64.b64encode(x).decode()
+
+def main():
+    ap = argparse.ArgumentParser(description="Encrypt file with DEK already wrapped in bundle (AES-256-GCM)")
+    ap.add_argument("in_file", type=Path, help="plaintext file to encrypt")
+    ap.add_argument("out_enc", type=Path, help="output encrypted file (JSON)")
+    ap.add_argument("bundle_json", type=Path, help="bundle json path (unused while encrypting)")
+    ap.add_argument("aad", help="AAD string")
+    args = ap.parse_args()
+
+    # Тук НЕ пипаме bundle; това е само file-encrypt helper за теста.
+    pt = args.in_file.read_bytes()
+    dek = os.urandom(32)  # В теста реално DEK идва от wrap_existing_dek_for; тук просто показваме формат.
+    nonce = os.urandom(12)
+    c = AES.new(dek, AES.MODE_GCM, nonce=nonce)
+    c.update(args.aad.encode())
+    ct, tag = c.encrypt_and_digest(pt)
+
+    # Запис в ясен JSON формат
+    args.out_enc.write_text(json.dumps({
+        "nonce": b64(nonce),
+        "ciphertext": b64(ct),
+        "tag": b64(tag),
+    }), encoding="utf-8")
+    print(f"Encrypted → {args.out_enc}  |  Bundle → {args.bundle_json}")
+
+if __name__ == "__main__":
+    main()

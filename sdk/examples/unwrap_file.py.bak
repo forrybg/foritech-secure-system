@@ -1,0 +1,207 @@
+import argparse
+import base64
+import binascii
+import json
+import sys
+import traceback
+from pathlib import Path
+from typing import Tuple, Optional, Set, List
+
+from Crypto.Cipher import AES
+from foritech.api import unwrap_dek
+
+
+def _b64_or_hex(s: str) -> bytes:
+    s = s.strip()
+    # пробвай base64 първо
+    try:
+        return base64.b64decode(s.encode(), validate=True)
+    except Exception:
+        pass
+    # после hex
+    try:
+        return binascii.unhexlify(s.encode())
+    except Exception:
+        raise ValueError("value is neither base64 nor hex")
+
+
+def _read_enc(path: Path) -> Tuple[bytes, bytes, bytes]:
+    """
+    Поддържани формати на ENC:
+      1) JSON с различни имена на ключове:
+         - nonce:  "nonce" | "iv" | "n" | "nonce_b64" | "iv_b64"
+         - ct:     "ciphertext" | "ct" | "enc" | "payload"
+         - tag:    "tag" | "mac" | "auth_tag"
+         Стойностите могат да са base64 или hex.
+      2) Три реда base64 или hex: nonce\nciphertext\ntag
+      3) Бинарен dump: nonce(12) | ciphertext | tag(16)
+    Връща (nonce, ct, tag).
+    """
+    data = path.read_bytes()
+
+    # 1) JSON с гъвкави ключове
+    try:
+        obj = json.loads(data.decode("utf-8"))
+        # възможни ключове
+        nonce_keys = ["nonce", "iv", "n", "nonce_b64", "iv_b64"]
+        ct_keys    = ["ciphertext", "ct", "enc", "payload"]
+        tag_keys   = ["tag", "mac", "auth_tag"]
+
+        def pick(obj, keys):
+            for k in keys:
+                if k in obj:
+                    return obj[k]
+            return None
+
+        n_s = pick(obj, nonce_keys)
+        c_s = pick(obj, ct_keys)
+        t_s = pick(obj, tag_keys)
+        if all(v is not None for v in (n_s, c_s, t_s)):
+            n = _b64_or_hex(str(n_s))
+            c = _b64_or_hex(str(c_s))
+            t = _b64_or_hex(str(t_s))
+            return n, c, t
+    except Exception:
+        pass
+
+    # 2) три реда base64/hex
+    try:
+        parts = data.decode("utf-8").strip().splitlines()
+        if len(parts) == 3 and all(len(p.strip()) > 0 for p in parts):
+            n = _b64_or_hex(parts[0])
+            c = _b64_or_hex(parts[1])
+            t = _b64_or_hex(parts[2])
+            return n, c, t
+    except Exception:
+        pass
+
+    # 3) бинарен формат nonce|ct|tag
+    if len(data) < 12 + 16:
+        raise SystemExit(f"encrypted file too short: {len(data)} bytes")
+    return data[:12], data[12:-16], data[-16:]
+
+
+def _kids_in_bundle(bundle: dict) -> List[str]:
+    kids: List[str] = []
+    for r in bundle.get("recipients", []):
+        if isinstance(r, dict):
+            h = r.get("header") or {}
+            k = None
+            if isinstance(h, dict) and h.get("kid"):
+                k = str(h["kid"])
+            if not k and r.get("kid"):
+                k = str(r["kid"])
+            if k and k not in kids:
+                kids.append(k)
+    for kkey in ("header", "protected"):
+        h = bundle.get(kkey)
+        if isinstance(h, dict) and h.get("kid"):
+            k = str(h["kid"])
+            if k not in kids:
+                kids.append(k)
+    return kids
+
+
+def _pick_alg(bundle: dict) -> Optional[str]:
+    for k in ("kem_alg", "kem", "alg", "algorithm"):
+        v = bundle.get(k)
+        if isinstance(v, str) and v.strip():
+            return v
+    return None
+
+
+def _try_unwrap_any(bundle: dict, candidates: List[str], sec_path: Path, aad: str, alg: Optional[str]) -> Tuple[bytes, str]:
+    last_exc = None
+    for kid in candidates:
+        try:
+            dek = unwrap_dek(bundle, kid=kid, sec_bytes=sec_path.read_bytes(), aad=aad, alg=alg)
+            return dek, kid
+        except Exception as e:
+            last_exc = e
+    raise last_exc if last_exc else RuntimeError("No candidates tried")
+
+
+def _aad_candidates(bundle: dict, cli_aad: str) -> List[Optional[bytes]]:
+    cands: List[Optional[bytes]] = []
+    # 1) CLI AAD
+    cands.append(cli_aad.encode())
+    # 2) от bundle
+    v = bundle.get("aad")
+    if isinstance(v, str):
+        b = v.encode()
+        if b not in cands:
+            cands.append(b)
+    for sect in ("protected", "header"):
+        h = bundle.get(sect)
+        if isinstance(h, dict) and isinstance(h.get("aad"), str):
+            b = h["aad"].encode()
+            if b not in cands:
+                cands.append(b)
+    # 3) без AAD
+    if None not in cands:
+        cands.append(None)
+    return cands
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Unwrap and decrypt file with AES-GCM using foritech bundle")
+    ap.add_argument("enc_file", type=Path, help="encrypted file (JSON/3-line base64/hex or binary nonce|ct|tag)")
+    ap.add_argument("bundle_json", type=Path, help="bundle json path")
+    ap.add_argument("out_file", type=Path, help="output plaintext path")
+    ap.add_argument("aad", help="AAD string")
+    ap.add_argument("kid", nargs="?", default=None, help="recipient key id (optional)")
+    ap.add_argument("sec_path", type=Path, help="private key file for recipient (.kem.sec)")
+    args = ap.parse_args()
+
+    # bundle
+    try:
+        bundle = json.loads(args.bundle_json.read_text(encoding="utf-8"))
+    except Exception:
+        print("ERROR: bundle must be JSON file", file=sys.stderr)
+        sys.exit(2)
+
+    # candidate kids
+    bundle_kids = _kids_in_bundle(bundle)
+    candidates: List[str] = []
+    if args.kid:
+        candidates.append(args.kid)
+    for k in bundle_kids:
+        if k not in candidates:
+            candidates.append(k)
+    if not candidates:
+        print("ERROR: no kid provided and none found in bundle", file=sys.stderr)
+        sys.exit(2)
+
+    alg = _pick_alg(bundle)
+
+    # unwrap
+    try:
+        dek, used_kid = _try_unwrap_any(bundle, candidates, args.sec_path, args.aad, alg)
+    except Exception as e:
+        print(f"ERROR: unwrap_dek failed for candidates {candidates}: {e}", file=sys.stderr)
+        traceback.print_exc()
+        sys.exit(3)
+
+    # decrypt с AAD fallbacks
+    nonce, ct, tag = _read_enc(args.enc_file)
+    errors = []
+    for aad_b in _aad_candidates(bundle, args.aad):
+        try:
+            c = AES.new(dek, AES.MODE_GCM, nonce=nonce)
+            if aad_b is not None:
+                c.update(aad_b)
+            pt = c.decrypt_and_verify(ct, tag)
+            args.out_file.write_bytes(pt)
+            which = "CLI AAD" if aad_b == args.aad.encode() else ("bundle AAD" if aad_b is not None else "no AAD")
+            print(f"OK: unwrapped kid={used_kid}, AAD used: {which}, wrote {args.out_file}")
+            return
+        except Exception as e:
+            errors.append(str(e))
+            continue
+
+    print("ERROR: AES-GCM decrypt failed with all AAD variants: " + " | ".join(errors), file=sys.stderr)
+    sys.exit(4)
+
+
+if __name__ == "__main__":
+    main()

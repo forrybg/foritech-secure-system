@@ -1,0 +1,53 @@
+--- a/sdk/tests/test_cli_hybrid.py
++++ b/sdk/tests/test_cli_hybrid.py
+@@
++import os
++try:
++    import oqs as _oqs  # noqa: F401
++    _ENABLED_KEMS = set(_oqs.get_enabled_kems())
++except Exception:  # pragma: no cover
++    _ENABLED_KEMS = set()
++
++def _pick_kem_for_tests() -> str:
++    env = os.environ.get("FORITECH_TEST_KEM")
++    if env:
++        return env
++    if "Kyber768" in _ENABLED_KEMS:
++        return "kyber768"
++    return "ml-kem-768"
++
++KEM_FOR_TESTS = _pick_kem_for_tests()
+@@
+-    return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
++    return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+@@
+-    run_cli("kem-genkey", "-k", "ml-kem-768", "-o", str(base))
++    run_cli("kem-genkey", "-k", KEM_FOR_TESTS, "-o", str(base))
+@@
+-    run_cli("wrap", "-k", "ml-kem-768", "-r", str(base)+".pub", "-i", str(inp), "-o", str(bundle))
++    run_cli("wrap", "-k", KEM_FOR_TESTS, "-r", str(base)+".pub", "-i", str(inp), "-o", str(bundle))
+--- a/sdk/tests/test_examples_cli.py
++++ b/sdk/tests/test_examples_cli.py
+@@
++import os
++try:
++    import oqs as _oqs  # noqa: F401
++    _ENABLED_KEMS = set(_oqs.get_enabled_kems())
++except Exception:  # pragma: no cover
++    _ENABLED_KEMS = set()
++
++def _pick_kem_for_tests() -> str:
++    env = os.environ.get("FORITECH_TEST_KEM")
++    if env:
++        return env
++    if "Kyber768" in _ENABLED_KEMS:
++        return "kyber768"
++    return "ml-kem-768"
++
++KEM_FOR_TESTS = _pick_kem_for_tests()
+@@
+-    subprocess.run([sys.executable, "-m", "foritech.cli", "kem-genkey", "-k", "ml-kem-768", "-o", str(tmp_path/"a")], check=True)
++    subprocess.run([sys.executable, "-m", "foritech.cli", "kem-genkey", "-k", KEM_FOR_TESTS, "-o", str(tmp_path/"a")], check=True)
+@@
+-    subprocess.run([sys.executable, "-m", "foritech.cli", "wrap", "-k", "ml-kem-768", "-r", str(tmp_path/"a.pub"), "-i", str(inp), "-o", str(bundle)], check=True)
++    subprocess.run([sys.executable, "-m", "foritech.cli", "wrap", "-k", KEM_FOR_TESTS, "-r", str(tmp_path/"a.pub"), "-i", str(inp), "-o", str(bundle)], check=True)
