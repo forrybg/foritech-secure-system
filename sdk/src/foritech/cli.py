@@ -1,7 +1,7 @@
 from __future__ import annotations
 import argparse, json
 from pathlib import Path
-from .crypto.pqc_kem import kem_generate, b64e, b64d, kem_encapsulate, kem_decapsulate
+from .crypto.pqc_kem import kem_generate, b64e, b64d, kem_encapsulate, kem_decapsulate, normalize_alg
 from .crypto.hybrid_wrap import hybrid_unwrap_dek, hybrid_wrap_dek
 
 import json
@@ -44,14 +44,14 @@ def cmd_kem_genkey(args):
 
 def cmd_hybrid_wrap(args):
     recips = json.loads(Path(args.recipients).read_text())
-    bundle = hybrid_wrap_dek(recips, kem_alg=args.kem, aad_str=args.aad, signer=None)
+    bundle = hybrid_wrap_dek(recips, kem_alg=normalize_alg(args.kem), aad_str=args.aad, signer=None)
     Path(args.o).write_text(json.dumps(bundle, separators=(",", ":"), sort_keys=True))
     print(f"Wrote bundle: {args.o}")
 
 def cmd_hybrid_unwrap(args):
     bundle = json.loads(Path(args.bundle).read_text())
     sec = Path(args.secret).read_bytes()
-    dek = hybrid_unwrap_dek(bundle, recipient_kid=args.kid, sec_key=sec, kem_alg=args.kem, aad_str=args.aad)
+    dek = hybrid_unwrap_dek(bundle, recipient_kid=args.kid, sec_key=sec, kem_alg=normalize_alg(args.kem), aad_str=args.aad)
     Path(args.out_dek).write_bytes(dek)
     print(f"Wrote DEK ({len(dek)} bytes) → {args.out_dek}")
 

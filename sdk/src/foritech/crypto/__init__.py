@@ -4,5 +4,6 @@ from .pqc_kem import (
     kem_decapsulate,
     b64e,
     b64d,
+    normalize_alg,
 )
-# по желание могат да останат и други експорти от пакета
+# остави и други експорти ако имаш
