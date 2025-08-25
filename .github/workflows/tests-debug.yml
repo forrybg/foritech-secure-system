@@ -1,0 +1,35 @@
+name: CI • Debug one test
+
+on:
+  workflow_dispatch: {}          # пуска се ръчно от Actions → Run workflow
+  pull_request:
+    branches: [ "main" ]         # ще се пуска и в PR-ове към main
+
+jobs:
+  debug-one:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FORITECH_TEST_KEM: Kyber768
+      PYTHONPATH: ${{ github.workspace }}/sdk/src
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f sdk/requirements.txt ]; then pip install -r sdk/requirements.txt; fi
+          pip install -e sdk || true
+          pip install pytest
+
+      - name: Run only the hybrid CLI roundtrip test (verbose)
+        run: |
+          pytest -vv -s sdk/tests/test_cli_hybrid.py::test_cli_wrap_unwrap_roundtrip
