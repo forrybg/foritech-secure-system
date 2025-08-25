@@ -28,9 +28,19 @@ jobs:
       - name: Install Python deps
         run: |
           python -m pip install --upgrade pip
+          # core deps
+          python -m pip install pytest pyoqs
+          # project deps (if present)
           if [ -f sdk/requirements.txt ]; then pip install -r sdk/requirements.txt; fi
           pip install -e sdk || true
-          python -m pip install pytest
+
+      - name: Verify oqs
+        run: |
+          python - <<'PY'
+          import oqs, sys
+          print("oqs version OK")
+          print("enabled KEMs:", len(getattr(oqs, "get_enabled_kem_mechanisms", lambda: [])()))
+          PY
 
       - name: Run tests (verbose)
         run: |
