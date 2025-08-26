@@ -1,0 +1,29 @@
+name: Notes (manual)
+on:
+  workflow_dispatch:
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install reportlab pyyaml
+      - name: Generate note
+        run: |
+          python scripts/make_note.py note \
+            --title "Foritech Project Note — $(date +%F)" \
+            --date "$(date +%F)" \
+            --author "forrybg" \
+            --version "v1.0" \
+            --sections docs/notes/today.yml \
+            --out docs/notes/$(date +%F)_auto
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/notes
+          git commit -m "docs(notes): auto note $(date +%F)" || echo "No changes"
+          git push
