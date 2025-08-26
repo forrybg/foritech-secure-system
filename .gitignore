@@ -19,3 +19,9 @@ liboqs-python/
 a.txt
 a.enc
 a.out
+big.*
+*.enc
+*.out
+s.txt
+s.enc
+s.out
