@@ -1,0 +1,133 @@
+name: Demo • TLS-PQC smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      python:
+        description: Python version
+        required: false
+        default: '3.12'
+
+jobs:
+  smoke:
+    # НУЖЕН е self-hosted runner с liboqs + liboqs-python
+    runs-on: [self-hosted, linux]
+    timeout-minutes: 10
+    concurrency:
+      group: demo-smoke-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python }}
+
+      - name: Create venv & install SDK
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -U pip
+          pip install -e ".[dev]"
+
+      - name: Generate Kyber keys
+        run: |
+          source .venv/bin/activate
+          python scripts/kyber-keygen.py
+          echo "FORITECH_SK=$HOME/.foritech/keys/kyber768_sec.bin" >> $GITHUB_ENV
+
+      - name: Detect liboqs-python (oqs)
+        id: detect
+        run: |
+          source .venv/bin/activate
+          python - <<'PY' > .have_oqs
+try:
+  import oqs
+  print("have_oqs=1")
+except Exception as e:
+  print("have_oqs=0")
+PY
+          if grep -q 'have_oqs=1' .have_oqs; then
+            echo "have_oqs=true" >> $GITHUB_OUTPUT
+          else
+            echo "have_oqs=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Skip (liboqs missing)
+        if: steps.detect.outputs.have_oqs != 'true'
+        run: |
+          echo "::notice::liboqs-python (oqs) не е наличен на runner-а. Прескачам smoke демото."
+          exit 0
+
+      - name: Choose free port
+        id: choose
+        run: |
+          python - <<'PY'
+import socket, os
+s=socket.socket(); s.bind(("127.0.0.1",0))
+port=s.getsockname()[1]; s.close()
+open(os.environ["GITHUB_OUTPUT"], "a").write(f"port={port}\n")
+print("PORT", port)
+PY
+
+      - name: Self-signed SPKI cert
+        if: steps.detect.outputs.have_oqs == 'true'
+        run: |
+          source .venv/bin/activate
+          foritech x509-make --cn spki-demo --format spki \
+            --pqc-pub "$HOME/.foritech/keys/kyber768_pub.bin" \
+            --cert-out spki_self.pem --key-out spki_self.key
+          foritech x509-info --in spki_self.pem
+
+      - name: Start server
+        if: steps.detect.outputs.have_oqs == 'true'
+        run: |
+          source .venv/bin/activate
+          nohup python scripts/tls_pqc_server.py \
+            --host 127.0.0.1 --port ${{ steps.choose.outputs.port }} \
+            --cert spki_self.pem --key spki_self.key > server.log 2>&1 &
+          echo $! > server.pid
+
+      - name: Wait for server
+        if: steps.detect.outputs.have_oqs == 'true'
+        run: |
+          python - <<'PY'
+import ssl,socket,sys,time
+host='127.0.0.1'; port=int('${{ steps.choose.outputs.port }}')
+ctx=ssl._create_unverified_context()
+t0=time.time(); ok=False
+while time.time()-t0<5:
+  try:
+    with socket.create_connection((host,port),timeout=0.25) as raw:
+      with ctx.wrap_socket(raw): pass
+    ok=True; break
+  except Exception:
+    time.sleep(0.1)
+print("ok=", ok)
+sys.exit(0 if ok else 1)
+PY
+
+      - name: Run client
+        if: steps.detect.outputs.have_oqs == 'true'
+        run: |
+          source .venv/bin/activate
+          python scripts/tls_pqc_client.py \
+            --host 127.0.0.1 --port ${{ steps.choose.outputs.port }} | tee client.log
+
+      - name: Kill server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then kill $(cat server.pid) || true; fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-smoke-logs
+          path: |
+            server.log
+            client.log
