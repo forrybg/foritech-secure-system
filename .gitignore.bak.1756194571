@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+.build/
+dist/
+*.egg-info/
+.venv/
+.env
+.mypy_cache/
+.pytest_cache/
+.coverage
+
+# избягваме втори layout в корена
+src/
+foritech-secure-system/
+
+liboqs-python/
+a.txt
+a.enc
+a.out
