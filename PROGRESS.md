@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-26
+- ci(notes): add manual workflow to generate daily note
+- chore(progress): auto-update PROGRESS.md
+- docs(notes): add template + daily note (MD+PDF) and note generator
+- chore(progress): auto-update PROGRESS.md
+- feat(cli): auto-stream for files >=64MiB; --stream/--no-stream and threshold flag
+- chore(progress): auto-update PROGRESS.md
+- feat(stream): add chunked AEAD streaming core and API wiring
+- chore(gitignore): ignore only root /src; allow sdk/src
+- feat(stream): chunked AEAD streaming (Kyber768 + ChaCha20-Poly1305); add stress script
+- chore(progress): auto-update PROGRESS.md
+
+## 2025-08-26
 - docs(notes): add template + daily note (MD+PDF) and note generator
 - chore(progress): auto-update PROGRESS.md
 - feat(cli): auto-stream for files >=64MiB; --stream/--no-stream and threshold flag
