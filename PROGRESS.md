@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-26
+- chore(githooks): add pre-commit to block >50MB & .enc/.out/.bin & big.* and nested repos
+- chore(progress): auto-update PROGRESS.md
+- chore: ignore large/test artifacts; untrack liboqs-python and blobs
+- chore: ignore large/test artifacts; untrack liboqs-python and blobs
+- chore(gitignore): ignore local large/test artifacts
+- ci: archive legacy pqc-ci/tests-lite workflows to reduce noise
+- chore(progress): auto-update PROGRESS.md
+- ci(notes): add manual workflow to generate daily note
+- chore(progress): auto-update PROGRESS.md
+- docs(notes): add template + daily note (MD+PDF) and note generator
+
+## 2025-08-26
 - chore: ignore large/test artifacts; untrack liboqs-python and blobs
 - chore: ignore large/test artifacts; untrack liboqs-python and blobs
 - chore(gitignore): ignore local large/test artifacts
