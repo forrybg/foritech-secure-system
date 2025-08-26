@@ -1,0 +1,186 @@
+from __future__ import annotations
+import base64, json
+from datetime import datetime, timedelta, timezone
+from typing import Tuple, Optional
+
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.x509.oid import NameOID, ObjectIdentifier
+from cryptography.x509 import UnrecognizedExtension
+
+# Частен OID (временен до PEN/регистрация)
+OID_FORITECH_HYBRID = ObjectIdentifier("1.3.6.1.4.1.55555.1.1")
+
+def _now_utc() -> datetime:
+    return datetime.now(tz=timezone.utc)
+
+def generate_hybrid_selfsigned(
+    cn: str,
+    kem_name: str,
+    pqc_pubkey_bytes: bytes,
+    days_valid: int = 365,
+) -> Tuple[bytes, bytes]:
+    """
+    Генерира self-signed ECDSA P-256 сертификат + PQC KEM публичен ключ в custom X.509 extension.
+    Връща (cert_pem, privkey_pem).
+    """
+    # Класически ключ (ECDSA)
+    priv = ec.generate_private_key(ec.SECP256R1())
+    pub = priv.public_key()
+
+    subject = issuer = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, cn)])
+    not_before = _now_utc() - timedelta(minutes=1)
+    not_after  = not_before + timedelta(days=days_valid)
+
+    # Payload за хибридния extension (JSON като raw bytes)
+    ext_payload = {
+        "kem": kem_name,
+        "pqc_pub_b64": base64.b64encode(pqc_pubkey_bytes).decode("ascii"),
+        "format": "raw",  # TODO: бъдещо SPKI/oqs-json
+        "v": 1,
+    }
+    ext_bytes = json.dumps(ext_payload, separators=(",", ":")).encode("utf-8")
+    hybrid_ext = UnrecognizedExtension(OID_FORITECH_HYBRID, ext_bytes)
+
+    builder = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(pub)
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(not_before)
+        .not_valid_after(not_after)
+        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+        .add_extension(hybrid_ext, critical=False)
+    )
+    cert = builder.sign(private_key=priv, algorithm=hashes.SHA256())
+
+    cert_pem = cert.public_bytes(encoding=serialization.Encoding.PEM)
+    key_pem = priv.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    return cert_pem, key_pem
+
+def extract_hybrid_info(cert_pem: bytes) -> Optional[dict]:
+    """
+    Чете нашия custom extension и връща dict или None, ако липсва.
+    Формат: {"kem": "...", "pqc_pub_b64": "...", "format":"raw", "v":1}
+    """
+    cert = x509.load_pem_x509_certificate(cert_pem)
+    try:
+        ext = cert.extensions.get_extension_for_oid(OID_FORITECH_HYBRID).value
+    except x509.ExtensionNotFound:
+        return None
+    if isinstance(ext, UnrecognizedExtension):
+        try:
+            return json.loads(ext.value.decode("utf-8"))
+        except Exception:
+            return None
+    return None
+
+def generate_ca_selfsigned(cn: str, days_valid: int = 3650) -> tuple[bytes, bytes]:
+    """
+    Генерира self-signed ECDSA CA (P-256). Връща (ca_cert_pem, ca_key_pem).
+    """
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.x509.oid import NameOID
+    from ..errors import ForitechError
+
+    try:
+        priv = ec.generate_private_key(ec.SECP256R1())
+        pub = priv.public_key()
+        subject = issuer = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, cn)])
+        not_before = _now_utc()
+        not_after  = not_before + timedelta(days=days_valid)
+        builder = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(pub)
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(not_before)
+            .not_valid_after(not_after)
+            .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+            .add_extension(x509.KeyUsage(
+                digital_signature=True, content_commitment=False,
+                key_encipherment=False, data_encipherment=False,
+                key_agreement=False, key_cert_sign=True, crl_sign=True,
+                encipher_only=False, decipher_only=False
+            ), critical=True)
+        )
+        cert = builder.sign(private_key=priv, algorithm=hashes.SHA256())
+        cert_pem = cert.public_bytes(encoding=serialization.Encoding.PEM)
+        key_pem = priv.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        return cert_pem, key_pem
+    except Exception as e:
+        raise ForitechError(f"PKI CA generate error: {e}") from e
+
+
+def issue_leaf_cert(
+    ca_cert_pem: bytes,
+    ca_key_pem: bytes,
+    subject_cn: str,
+    kem_name: str,
+    pqc_pubkey_bytes: bytes,
+    days_valid: int = 825,
+) -> bytes:
+    """
+    Издава leaf сертификат (ECDSA P-256) подписан от даден CA и добавя нашия hybrid extension.
+    Връща leaf cert PEM.
+    """
+    import base64, json
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.x509.oid import NameOID
+    from cryptography.x509 import UnrecognizedExtension
+    from ..errors import ForitechError
+
+    try:
+        ca_cert = x509.load_pem_x509_certificate(ca_cert_pem)
+        ca_key = serialization.load_pem_private_key(ca_key_pem, password=None)
+        if not isinstance(ca_key, ec.EllipticCurvePrivateKey):
+            raise ForitechError("CA key must be EC P-256 private key")
+
+        leaf_priv = ec.generate_private_key(ec.SECP256R1())
+        leaf_pub = leaf_priv.public_key()
+
+        subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, subject_cn)])
+        issuer  = ca_cert.subject
+        not_before = _now_utc()
+        not_after  = not_before + timedelta(days=days_valid)
+
+        ext_payload = {
+            "kem": kem_name,
+            "pqc_pub_b64": base64.b64encode(pqc_pubkey_bytes).decode("ascii"),
+            "format": "raw",
+            "v": 1,
+        }
+        hybrid_ext = UnrecognizedExtension(OID_FORITECH_HYBRID, json.dumps(ext_payload, separators=(",", ":")).encode("utf-8"))
+
+        builder = (
+            x509.CertificateBuilder()
+            .subject_name(subject)
+            .issuer_name(issuer)
+            .public_key(leaf_pub)
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(not_before)
+            .not_valid_after(not_after)
+            .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+            .add_extension(hybrid_ext, critical=False)
+        )
+        leaf = builder.sign(private_key=ca_key, algorithm=hashes.SHA256())
+        return leaf.public_bytes(encoding=serialization.Encoding.PEM)
+    except ForitechError:
+        raise
+    except Exception as e:
+        raise ForitechError(f"Issue leaf error: {e}") from e
