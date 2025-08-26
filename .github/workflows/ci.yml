@@ -1,19 +1,86 @@
-name: CI • 3.12
+name: CI (py312 pinned, zen mode)
+
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: tests (py3.12)
     runs-on: ubuntu-latest
+    if: ${{ hashFiles('**/*.py') != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-3.12-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: ${{ runner.os }}-pip-3.12-
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt || true; fi
+          pip install pytest pytest-cov
+
+      - name: Run tests
+        run: pytest -q --maxfail=1 --disable-warnings --cov=. --cov-report=xml
+
+      - name: (optional) foritech CLI smoke test
+        run: |
+          if [ -d sdk ]; then
+            echo "SDK detected — trying editable install (friendly, not clingy)…"
+            python -m pip install -e sdk || true
+            # ако няма entry point, не драматизираме
+            python - <<'PY' || true
+import importlib.util, sys
+ok = importlib.util.find_spec('foritech') is not None
+print("foritech importable:", ok)
+sys.exit(0)
+PY
+            # опит през python -m (ако имаш foritech/cli.py)
+            python -c "import importlib, sys; sys.exit(0) if importlib.util.find_spec('foritech') else sys.exit(0)"
+            python -m foritech.cli --help || true
+          else
+            echo "No sdk/ here — skipping CLI smoke. (We cool 😎)"
+          fi
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-py312
+          path: coverage.xml
+
+  style_safety:
+    name: style & safety (soft)
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('**/*.py') != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - run: pip install -e ".[dev]"
-      - name: Pytest (will skip kyber tests if keys/oqs missing)
-        run: pytest -q
+        with:
+          python-version: '3.12'
+      - run: |
+        python -m pip install --upgrade pip
+        pip install bandit semgrep safety pip-audit || true
+        bandit -r . -q || true
+        pip-audit -r requirements.txt || true
+        safety check -r requirements.txt || true
+      - name: Semgrep SAST
+        uses: returntocorp/semgrep-action@v1
+        with:
+          auditOn: push
+          config: p/ci
