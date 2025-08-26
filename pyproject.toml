@@ -1,6 +1,6 @@
 [project]
 name = "foritech"
-version = "0.1.0"
+version = "0.2.0"
 description = "Foritech SDK/API for PQC file wrap/unwrap with CLI"
 readme = "README.md"
 requires-python = ">=3.10"
