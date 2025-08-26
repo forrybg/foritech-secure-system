@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+MAX=$((50*1024*1024))  # 50MB
+fail=0
+
+# забрана за случайни тежки/временни типове
+for f in $(git diff --cached --name-only --diff-filter=AM); do
+  [ -f "$f" ] || continue
+  size=$(wc -c < "$f")
+  case "$f" in
+    *.enc|*.out|*.bin|big.*) 
+      echo "❌ Blocked: $f (pattern match)"; fail=1;;
+  esac
+  if [ "$size" -gt "$MAX" ]; then
+    echo "❌ Blocked: $f is > 50MB ($(numfmt --to=iec $size 2>/dev/null || echo ${size}B))"
+    fail=1
+  fi
+done
+
+# не позволяваме вграждане на чуждо .git (nested repo)
+if git diff --cached --name-only | grep -qE '^liboqs-python/.git'; then
+  echo "❌ Blocked: nested git repo files staged (liboqs-python/.git)"
+  fail=1
+fi
+
+[ $fail -eq 0 ] || { echo "Use .gitignore or Git LFS (ако наистина трябва)."; exit 1; }
+exit 0
