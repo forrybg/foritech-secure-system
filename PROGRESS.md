@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-26
+- chore(progress): auto-update PROGRESS.md
+- chore: ignore embedded repos and local artifacts
+- chore(progress): auto-update PROGRESS.md
+- chore: remove external tests & embedded repo; keep minimal Foritech tests; tidy .gitignore
+- chore: sanitize repo layout (single sdk/src/foritech, tests/ at root, cleanup)
+- chore: add dev-check and dev-demo scripts
+- chore: stabilize src layout, CLI, editable install; add crypto placeholders
+- chore: add core mover script
+- api: add generate_kem_keypair/save_secret/save_pubjson/recipients_from_files; cli: minimal kem-genkey main()
+- cli: robust __main__ launcher for -m execution; api: add save_pubjson(pub_b64/kid)
+
+## 2025-08-26
 - chore: ignore embedded repos and local artifacts
 - chore(progress): auto-update PROGRESS.md
 - chore: remove external tests & embedded repo; keep minimal Foritech tests; tidy .gitignore
