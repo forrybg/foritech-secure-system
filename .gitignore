@@ -12,7 +12,7 @@ dist/
 .coverage
 
 # избягваме втори layout в корена
-src/
+/src/
 foritech-secure-system/
 
 liboqs-python/
