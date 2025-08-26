@@ -1,0 +1,17 @@
+name: Nightly • Curiosity (3.13)
+on:
+  schedule:
+    - cron: '10 2 * * *'   # 02:10 UTC (05:10 Sofia)
+  workflow_dispatch:
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.13' }
+      - run: pip install -e ".[dev]"
+      - run: python -c "import foritech,sys; print('foritech:', foritech.__file__)"

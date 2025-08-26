@@ -1,0 +1,33 @@
+name: CI • Lite (lint + discover)
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+concurrency:
+  group: lite-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install ruff
+      - run: ruff version && ruff check .
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install -e ".[dev]"
+      - run: python - <<'PY'
+import importlib, sys
+m = importlib.import_module("foritech")
+print("foritech loaded:", getattr(m, "__file__", "<no file>"))
+import foritech.cli.main as cli
+print("cli OK")
+PY
+      - run: foritech --help
