@@ -10,8 +10,3 @@ dist/
 .mypy_cache/
 .pytest_cache/
 .coverage
-
-# избягваме втори layout в корена
-src/
-foritech-secure-system/
-
