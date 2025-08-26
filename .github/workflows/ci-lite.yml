@@ -24,10 +24,10 @@ jobs:
         with: { python-version: '3.12' }
       - run: pip install -e ".[dev]"
       - run: python - <<'PY'
-import importlib, sys
+import importlib
 m = importlib.import_module("foritech")
-print("foritech loaded:", getattr(m, "__file__", "<no file>"))
 import foritech.cli.main as cli
+print("foritech loaded:", getattr(m, "__file__", "<no file>"))
 print("cli OK")
 PY
       - run: foritech --help

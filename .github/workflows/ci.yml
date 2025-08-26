@@ -15,5 +15,5 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: pip install -e ".[dev]"
-      - name: Pytest (will skip kyber tests if keys/oqs missing)
+      - name: Pytest (Kyber tests auto-skip if keys/oqs missing)
         run: pytest -q
