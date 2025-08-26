@@ -314,35 +314,3 @@ def _spki_unwrap(spki_der: bytes) -> Tuple[str, bytes]:
         raise ValueError("SPKI: non-zero unused bits")
     pub = bytes(b[bstart+1:bstart+blen])
     return kem_name, pub
-
-# --- Foritech helper: extract raw PQC pub from hybrid X.509 (raw or spki-b64) ---
-def extract_pqc_pub(cert_pem_or_der: bytes) -> tuple[str, bytes]:
-    """
-    Връща (kem_name, pqc_pub_bytes) от нашия hybrid extension.
-    Поддържа формати "raw" (pqc_pub_b64) и "spki-b64" (spki_b64 с вътрешен SPKI wrap).
-    """
-    info = extract_hybrid_info(cert_pem_or_der)
-    if not info:
-        raise ForitechError("Hybrid extension not found")
-
-    kem = info.get("kem")
-    fmt = info.get("format")
-
-    if fmt == "raw":
-        b64 = info.get("pqc_pub_b64")
-        if not b64:
-            raise ForitechError("Missing pqc_pub_b64")
-        return kem, base64.b64decode(b64)
-
-    if fmt in ("spki", "spki-b64"):
-        b64 = info.get("spki_b64")
-        if not b64:
-            raise ForitechError("Missing spki_b64")
-        spki_der = base64.b64decode(b64)
-        try:
-            kem2, pub = _spki_unwrap(spki_der)  # трябва да е налична от SPKI имплементацията
-        except NameError:
-            raise ForitechError("SPKI unwrap helper (_spki_unwrap) is missing")
-        return (kem2 or kem), pub
-
-    raise ForitechError(f"Unsupported hybrid payload format: {fmt}")

@@ -1,5 +1,5 @@
 from __future__ import annotations
-import argparse
+import argparse, json
 from pathlib import Path
 
 from foritech.api import (
@@ -7,8 +7,8 @@ from foritech.api import (
 )
 from foritech.models import RawKemRecipient, WrapParams, UnwrapParams
 from foritech.pki.x509_tools import (
-    extract_hybrid_info, generate_hybrid_selfsigned,
-    generate_ca_selfsigned, issue_leaf_cert,
+    extract_hybrid_info, extract_pqc_pub,
+    generate_hybrid_selfsigned, generate_ca_selfsigned, issue_leaf_cert,
 )
 
 def _build_recipients(recipient_args: list[str]):
@@ -81,15 +81,17 @@ def cmd_unwrap(args: argparse.Namespace) -> int:
 
 def cmd_x509_info(args: argparse.Namespace) -> int:
     try:
-        p = Path(args.input)
-        data = p.read_bytes()
+        data = Path(args.input).read_bytes()
         info = extract_hybrid_info(data)
-        if not info:
-            print("X509: no FORITECH_HYBRID extension")
-            return 0
-        kem = info.get("kem"); fmt = info.get("format")
-        b64 = info.get("pqc_pub_b64") or info.get("spki_b64") or ""
-        print(f"X509: kem={kem} format={fmt} pqc_pub_b64_len={len(b64)} v={info.get('v')}")
+        if args.json:
+            print(json.dumps(info or {}, separators=(",", ":"), ensure_ascii=False))
+        else:
+            if not info:
+                print("X509: no FORITECH_HYBRID extension")
+            else:
+                kem = info.get("kem"); fmt = info.get("format")
+                b64 = info.get("pqc_pub_b64") or info.get("spki_b64") or ""
+                print(f"X509: kem={kem} format={fmt} pqc_pub_b64_len={len(b64)} v={info.get('v')}")
         return 0
     except Exception as e:
         print(f"ERROR: {e}")
@@ -104,10 +106,12 @@ def cmd_x509_make(args: argparse.Namespace) -> int:
         )
         Path(args.cert_out).write_bytes(cert_pem)
         Path(args.key_out).write_bytes(key_pem)
+        if args.chain_out:
+            Path(args.chain_out).write_bytes(cert_pem)
         info = extract_hybrid_info(cert_pem)
         if info:
             print(f"X509: kem={info.get('kem')} format={info.get('format')} v={info.get('v')}")
-        print(f"Written: cert={args.cert_out} key={args.key_out}")
+        print(f"Written: cert={args.cert_out} key={args.key_out}" + (f" chain={args.chain_out}" if args.chain_out else ""))
         return 0
     except Exception as e:
         print(f"ERROR: {e}")
@@ -136,10 +140,23 @@ def cmd_x509_issue(args: argparse.Namespace) -> int:
             ext_format=("spki" if args.format == "spki" else "raw")
         )
         Path(args.cert_out).write_bytes(leaf)
+        if args.chain_out:
+            Path(args.chain_out).write_bytes(leaf + b"\n" + ca_cert)
         info = extract_hybrid_info(leaf)
         if info:
             print(f"X509: kem={info.get('kem')} format={info.get('format')} v={info.get('v')}")
-        print(f"Leaf written: cert={args.cert_out}")
+        print(f"Leaf written: cert={args.cert_out}" + (f" chain={args.chain_out}" if args.chain_out else ""))
+        return 0
+    except Exception as e:
+        print(f"ERROR: {e}")
+        return 1
+
+def cmd_x509_extract_pqc(args: argparse.Namespace) -> int:
+    try:
+        cert = Path(args.input).read_bytes()
+        kem, pub = extract_pqc_pub(cert)
+        Path(args.out).write_bytes(pub)
+        print(f"PQC pub extracted: kem={kem} bytes={len(pub)} -> {args.out}")
         return 0
     except Exception as e:
         print(f"ERROR: {e}")
@@ -171,6 +188,7 @@ def main(argv: list[str] | None = None) -> int:
 
     p_xinfo = sub.add_parser("x509-info", help="Show Foritech hybrid info from X.509 cert")
     p_xinfo.add_argument("--in", dest="input", required=True)
+    p_xinfo.add_argument("--json", action="store_true", help="Output JSON payload")
     p_xinfo.set_defaults(func=cmd_x509_info)
 
     p_xmake = sub.add_parser("x509-make", help="Generate hybrid self-signed cert with PQC extension")
@@ -181,6 +199,7 @@ def main(argv: list[str] | None = None) -> int:
     p_xmake.add_argument("--key-out", default="hybrid_key.pem")
     p_xmake.add_argument("--days", type=int, default=365)
     p_xmake.add_argument("--format", choices=["raw","spki"], default="raw", help="Extension key encoding")
+    p_xmake.add_argument("--chain-out", default=None, help="Write fullchain file (self cert)")
     p_xmake.set_defaults(func=cmd_x509_make)
 
     p_xmake_ca = sub.add_parser("x509-make-ca", help="Generate self-signed CA (ECDSA P-256)")
@@ -199,7 +218,13 @@ def main(argv: list[str] | None = None) -> int:
     p_xissue.add_argument("--cert-out", default="leaf_cert.pem")
     p_xissue.add_argument("--days", type=int, default=825)
     p_xissue.add_argument("--format", choices=["raw","spki"], default="raw", help="Extension key encoding")
+    p_xissue.add_argument("--chain-out", default=None, help="Write fullchain file (leaf + CA)")
     p_xissue.set_defaults(func=cmd_x509_issue)
+
+    p_xextract = sub.add_parser("x509-extract-pqc", help="Extract PQC public key bytes from hybrid X.509")
+    p_xextract.add_argument("--in", dest="input", required=True)
+    p_xextract.add_argument("--out", dest="out", required=True)
+    p_xextract.set_defaults(func=cmd_x509_extract_pqc)
 
     args = ap.parse_args(argv)
     return args.func(args)

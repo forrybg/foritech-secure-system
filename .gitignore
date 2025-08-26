@@ -28,3 +28,12 @@ s.out
 liboqs-python/
 liboqs-python/
 liboqs-python/
+
+# --- Foritech PKI demo artifacts / DO NOT COMMIT ---
+*.pem
+*.key
+pqc_*.bin
+spki_*.bin
+server_cert.pem
+fullchain.pem
+repo_backups/

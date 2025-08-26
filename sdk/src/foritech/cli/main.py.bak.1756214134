@@ -88,7 +88,7 @@ def cmd_x509_info(args: argparse.Namespace) -> int:
             print("X509: no FORITECH_HYBRID extension")
             return 0
         kem = info.get("kem"); fmt = info.get("format")
-        b64 = info.get("pqc_pub_b64") or ""
+        b64 = info.get("pqc_pub_b64") or info.get("spki_b64") or ""
         print(f"X509: kem={kem} format={fmt} pqc_pub_b64_len={len(b64)} v={info.get('v')}")
         return 0
     except Exception as e:
@@ -99,7 +99,8 @@ def cmd_x509_make(args: argparse.Namespace) -> int:
     try:
         pqc_pub = Path(args.pqc_pub).read_bytes()
         cert_pem, key_pem = generate_hybrid_selfsigned(
-            cn=args.cn, kem_name=args.kem, pqc_pubkey_bytes=pqc_pub, days_valid=args.days
+            cn=args.cn, kem_name=args.kem, pqc_pubkey_bytes=pqc_pub,
+            days_valid=args.days, ext_format=("spki" if args.format == "spki" else "raw")
         )
         Path(args.cert_out).write_bytes(cert_pem)
         Path(args.key_out).write_bytes(key_pem)
@@ -131,7 +132,8 @@ def cmd_x509_issue(args: argparse.Namespace) -> int:
         leaf = issue_leaf_cert(
             ca_cert_pem=ca_cert, ca_key_pem=ca_key,
             subject_cn=args.cn, kem_name=args.kem,
-            pqc_pubkey_bytes=pqc_pub, days_valid=args.days
+            pqc_pubkey_bytes=pqc_pub, days_valid=args.days,
+            ext_format=("spki" if args.format == "spki" else "raw")
         )
         Path(args.cert_out).write_bytes(leaf)
         info = extract_hybrid_info(leaf)
@@ -178,6 +180,7 @@ def main(argv: list[str] | None = None) -> int:
     p_xmake.add_argument("--cert-out", default="hybrid_cert.pem")
     p_xmake.add_argument("--key-out", default="hybrid_key.pem")
     p_xmake.add_argument("--days", type=int, default=365)
+    p_xmake.add_argument("--format", choices=["raw","spki"], default="raw", help="Extension key encoding")
     p_xmake.set_defaults(func=cmd_x509_make)
 
     p_xmake_ca = sub.add_parser("x509-make-ca", help="Generate self-signed CA (ECDSA P-256)")
@@ -195,6 +198,7 @@ def main(argv: list[str] | None = None) -> int:
     p_xissue.add_argument("--ca-key",  required=True)
     p_xissue.add_argument("--cert-out", default="leaf_cert.pem")
     p_xissue.add_argument("--days", type=int, default=825)
+    p_xissue.add_argument("--format", choices=["raw","spki"], default="raw", help="Extension key encoding")
     p_xissue.set_defaults(func=cmd_x509_issue)
 
     args = ap.parse_args(argv)
