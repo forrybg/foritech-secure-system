@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-26
+- chore: bump version to 0.4.0 (TLS-PQC sessions + X509 SPKI)
+- chore(progress): auto-update PROGRESS.md
+- feat(tlspqc+x509): session client, SPKI/raw extensions; docs & tests; ignore demo certs/keys
+- chore(progress): auto-update PROGRESS.md
+- tlspqc: remove bad dashed import; fix integration test indentation
+- tests(tlspqc): fix indentation in integration test
+- chore: bump version to 0.3.1 (Hybrid X.509 SPKI + TLS PoC)
+- docs+tests: TLS PoC script; SPKI CLI tests; README TLS section
+- chore: bump version to 0.3.0 (Hybrid X.509 SPKI)
+- feat(pki): SPKI option for hybrid extension (+CLI --format spki)
+
+## 2025-08-26
 - feat(tlspqc+x509): session client, SPKI/raw extensions; docs & tests; ignore demo certs/keys
 - chore(progress): auto-update PROGRESS.md
 - tlspqc: remove bad dashed import; fix integration test indentation
