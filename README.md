@@ -130,3 +130,14 @@ make fmt && make lint     # ruff fix / check
 make typecheck            # mypy
 make clean                # чисти локални артефакти (*.pem/*.key/enc/out)
 
+
+### CI: Demo • TLS-PQC smoke (manual)
+Има ръчен workflow **Demo • TLS-PQC smoke** (Runs on: `self-hosted, linux`), който:
+1) създава venv и инсталира SDK;
+2) генерира Kyber ключове;
+3) прави SPKI self-signed cert;
+4) стартира demo сървър + пуска клиента;
+5) качва `server.log` и `client.log` като артефакти.
+
+> Ако `liboqs-python (oqs)` липсва на runner-а, job-ът се **скипва** (успешно), без да чупи таблото.
+
