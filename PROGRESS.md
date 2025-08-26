@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-26
+- feat(cli): auto-stream for files >=64MiB; --stream/--no-stream and threshold flag
+- chore(progress): auto-update PROGRESS.md
+- feat(stream): add chunked AEAD streaming core and API wiring
+- chore(gitignore): ignore only root /src; allow sdk/src
+- feat(stream): chunked AEAD streaming (Kyber768 + ChaCha20-Poly1305); add stress script
+- chore(progress): auto-update PROGRESS.md
+- dev: pin local Python 3.12 via .python-version
+- chore(progress): auto-update PROGRESS.md
+- ci: pin Python 3.12; add foritech --help; archive noisy workflows
+- ci: archive old workflows; add CI • 3.12 and CI • Lite; nightly curiosity
+
+## 2025-08-26
 - feat(stream): add chunked AEAD streaming core and API wiring
 - chore(gitignore): ignore only root /src; allow sdk/src
 - feat(stream): chunked AEAD streaming (Kyber768 + ChaCha20-Poly1305); add stress script
