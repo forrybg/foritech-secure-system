@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-26
+- ci: archive old workflows; add CI • 3.12 and CI • Lite; nightly curiosity
+- test: drop legacy tests expecting old API; keep minimal Kyber roundtrip/meta
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- chore: ignore embedded repos and local artifacts
+- chore(progress): auto-update PROGRESS.md
+- chore: remove external tests & embedded repo; keep minimal Foritech tests; tidy .gitignore
+- chore: sanitize repo layout (single sdk/src/foritech, tests/ at root, cleanup)
+- chore: add dev-check and dev-demo scripts
+- chore: stabilize src layout, CLI, editable install; add crypto placeholders
+
+## 2025-08-26
 - chore(progress): auto-update PROGRESS.md
 - chore: ignore embedded repos and local artifacts
 - chore(progress): auto-update PROGRESS.md
