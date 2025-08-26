@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-26
+- ci(demo): add manual TLS-PQC smoke workflow (self-hosted; skips if liboqs missing)
+- chore(progress): auto-update PROGRESS.md
+- dev: Makefile quick targets (keys/x509/server/client/stream); README usage
+- chore(progress): auto-update PROGRESS.md
+- docs(README): add TLS-PQC sessions quickstart and features (v0.4.0)
+- chore(progress): auto-update PROGRESS.md
+- chore: bump version to 0.4.0 (TLS-PQC sessions + X509 SPKI)
+- chore(progress): auto-update PROGRESS.md
+- feat(tlspqc+x509): session client, SPKI/raw extensions; docs & tests; ignore demo certs/keys
+- chore(progress): auto-update PROGRESS.md
+
+## 2025-08-26
 - dev: Makefile quick targets (keys/x509/server/client/stream); README usage
 - chore(progress): auto-update PROGRESS.md
 - docs(README): add TLS-PQC sessions quickstart and features (v0.4.0)
