@@ -51,3 +51,64 @@ scripts/backup_snapshot.sh
 scripts/backup_file.sh sdk/src/foritech/pki/x509_tools.py
 scripts/backup_file.sh sdk/src/foritech/cli/main.py
 
+
+---
+
+# TLS-PQC Sessions (Kyber768) — Demo
+
+В репото има минимален клиент/сървър протокол за сесии върху HTTPS:
+- KEM: **Kyber768** (чрез `liboqs-python`)
+- Payload AEAD: **ChaCha20-Poly1305**
+- Ротация на ключа: HKDF(KEK, "foritech-keyupdate|epoch=\<n\>")
+
+## Бърз старт
+
+1) Инсталация (editable):
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e .[dev]
+
+Генерирай Kyber ключове (ако още нямаш):
+python scripts/kyber-keygen.py
+# запомни:
+#   Публичен: $HOME/.foritech/keys/kyber768_pub.bin
+#   Таен    : $HOME/.foritech/keys/kyber768_sec.bin
+export FORITECH_SK="$HOME/.foritech/keys/kyber768_sec.bin"
+
+Хибриден X.509 със SPKI PQC разширение:
+foritech x509-make --cn spki-demo --format spki \
+  --pqc-pub "$HOME/.foritech/keys/kyber768_pub.bin" \
+  --cert-out spki_self.pem --key-out spki_self.key
+foritech x509-info --in spki_self.pem
+
+Стартирай сървъра (TLS, използва горния cert):
+python scripts/tls_pqc_server.py --host 127.0.0.1 --port 8443 \
+  --cert spki_self.pem --key spki_self.key
+
+Клиент: handshake + сесия + ротация:
+python scripts/tls_pqc_client.py --host 127.0.0.1 --port 8443
+# ще видиш: session_id, batch изпращания, rotated=True при key update и OK ✅
+
+⚠️ Сигурност/хигиена: Не комитвай *.pem / *.key. В .gitignore вече има правила.
+Какво включва SDK-то до v0.4.0
+
+foritech CLI:
+
+wrap/unwrap (авто-stream за ≥64MiB; --stream/--no-stream)
+
+meta (показва KID, KEM, STREAM/CHUNK)
+
+X.509: x509-info, x509-make, x509-make-ca, x509-issue (raw/SPKI)
+
+Python:
+
+foritech.api (file/stream wrap/unwrap)
+
+foritech.pki.x509_tools (хибридни разширения raw/spki)
+
+foritech.tlspqc (TLS-PQC клиент със сесии)
+
+Тестове
+pytest -q
+# цел: всички зелено; интеграционният TLS-PQC тест се skip-ва без Kyber ключове.
+
