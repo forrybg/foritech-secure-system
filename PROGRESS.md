@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-26
+- ci: pin Python 3.12; add foritech --help; archive noisy workflows
+- ci: archive old workflows; add CI • 3.12 and CI • Lite; nightly curiosity
+- chore(progress): auto-update PROGRESS.md
+- ci: make foritech CLI smoke test friendly; pin everything to py3.12
+- chore(progress): auto-update PROGRESS.md
+- ci: archive old workflows; add CI • 3.12 and CI • Lite; nightly curiosity
+- test: drop legacy tests expecting old API; keep minimal Kyber roundtrip/meta
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- chore: ignore embedded repos and local artifacts
+
+## 2025-08-26
 - ci: make foritech CLI smoke test friendly; pin everything to py3.12
 - chore(progress): auto-update PROGRESS.md
 - ci: archive old workflows; add CI • 3.12 and CI • Lite; nightly curiosity
