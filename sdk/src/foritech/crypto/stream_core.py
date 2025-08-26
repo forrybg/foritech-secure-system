@@ -1,4 +1,5 @@
 from __future__ import annotations
+import base64
 import os, json, base64, struct
 from pathlib import Path
 from typing import Any, List, BinaryIO, Optional
@@ -100,15 +101,15 @@ def wrap_stream(reader: BinaryIO, writer: BinaryIO, recipients: List[Recipient],
     """
     Формат (streaming):
       MAGIC | VER | HLEN | HEADER_JSON | FRAMES...
-    HEADER_JSON (добавки):
-      { ..., "stream": {"chunk_size": <int>, "nonce8": <b64>} }
+    HEADER_JSON:
+      { ..., "stream": {"chunk_size": <int>, "nonce8_b64": <b64>} }
     FRAME:
-      idx(u32 LE) | clen(u32 LE) | ciphertext (AEAD over chunk with nonce = nonce8||idx)
-    AAD = HEADER_JSON + idx(u32) за всеки chunk.
+      idx(u32 LE) | clen(u32 LE) | ciphertext  (AEAD с nonce = nonce8||idx, AAD = HEADER_JSON + idx)
     """
     if chunk_size < 4096:
         chunk_size = 4096
-    dek = os.urandom(32)            # payload key
+
+    dek = os.urandom(32)
     recipients_meta = _wrap_recipients(dek, recipients)
 
     stream_nonce8 = os.urandom(8)
@@ -118,7 +119,7 @@ def wrap_stream(reader: BinaryIO, writer: BinaryIO, recipients: List[Recipient],
         "kid": params.kid,
         "aad_b64": _b64(params.aad) if params.aad is not None else None,
         "recipients": recipients_meta,
-        "stream": {"chunk_size": int(chunk_size), "nonce8": _b64(stream_nonce8)},
+        "stream": {"chunk_size": int(chunk_size), "nonce8_b64": _b64(stream_nonce8)},  # <- важно
     }
     header_json = json.dumps(header, separators=(",", ":")).encode("utf-8")
 
@@ -127,22 +128,23 @@ def wrap_stream(reader: BinaryIO, writer: BinaryIO, recipients: List[Recipient],
     writer.write(struct.pack("<I", len(header_json)))
     writer.write(header_json)
 
-    idx = 0
     aead = ChaCha20Poly1305(dek)
+    idx = 0
     while True:
         chunk = reader.read(chunk_size)
         if not chunk:
             break
         idx_le = struct.pack("<I", idx)
-        nonce = stream_nonce8 + idx_le  # 8 + 4 = 12
-        aad = header_json + idx_le
-        ciph = aead.encrypt(nonce, chunk, aad)
+        nonce = stream_nonce8 + idx_le                     # 12-byte nonce
+        aad   = header_json + idx_le
+        ciph  = aead.encrypt(nonce, chunk, aad)
+
         writer.write(idx_le)
         writer.write(struct.pack("<I", len(ciph)))
-        writer.write(ciph)
+        writer.write(ciph)                                  # <- не забравяй да запишеш ciphertext
         idx += 1
 
-    return {"kid": params.kid, "nonce": None, "kem": KEM_NAME, "aad_present": params.aad is not None}
+    return {"kid": params.kid, "aad_present": params.aad is not None, "kem": KEM_NAME, "stream": True, "chunk_size": chunk_size}
 
 def unwrap_stream(reader: BinaryIO, writer: BinaryIO, params: Optional[UnwrapParams]) -> dict[str, Any]:
     # прочети header

@@ -1,152 +1,55 @@
-# sdk/src/foritech/api.py
 from __future__ import annotations
-
-from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO, List, Optional
-import tempfile
+from typing import List, BinaryIO
+import json, struct
 
 from .errors import ForitechError
-from .models import Recipient, WrapParams, UnwrapParams, WrapResult, UnwrapResult
+from .models import Recipient, WrapParams, UnwrapParams, WrapResult, UnwrapResult  # (за съвместимост)
 
-# --- Твърди импорти към ядрата (вече съществуват) ---
-try:
-    from .crypto.wrap_core import wrap_file as core_wrap_file  # type: ignore
-except Exception as e:
-    core_wrap_file = None  # ще обясним по-долу
-
-try:
-    from .crypto.unwrap_core import (
-        unwrap_file as core_unwrap_file,       # type: ignore
-        detect_metadata as core_detect_metadata,  # type: ignore
-    )
-except Exception:
-    core_unwrap_file = None
-    core_detect_metadata = None
-
-
-def wrap_file(
-    src: str | Path,
-    dst: str | Path,
-    recipients: List[Recipient],
-    params: WrapParams,
-) -> WrapResult:
-    src_p, dst_p = Path(src), Path(dst)
-    if not src_p.exists():
-        raise ForitechError(f"Input not found: {src_p}")
-
-    if core_wrap_file is None:
-        # Ако тук влезеш – значи няма ядро. За да не те лъжем, гръмваме с ясно съобщение:
-        raise ForitechError("Crypto core not wired (foritech.crypto.wrap_core.wrap_file is missing)")
-
-    meta = core_wrap_file(src_p, dst_p, recipients, params)  # очакваме dict или обект с полета
-
-    # Попълване на WrapResult
-    kid = getattr(meta, "kid", None) if meta is not None else None
-    if isinstance(meta, dict):
-        kid = meta.get("kid", kid)
-        nonce = meta.get("nonce", None)
-        kem = meta.get("kem", None)
-        aad_present = bool(meta.get("aad_present", params.aad is not None))
-    else:
-        nonce = getattr(meta, "nonce", None)
-        kem = getattr(meta, "kem", None)
-        aad_present = bool(getattr(meta, "aad_present", params.aad is not None))
-
-    return WrapResult(
-        kid=kid if kid is not None else params.kid,
-        nonce=nonce,
-        aad_present=aad_present,
-        kem=kem if kem is not None else (params.kem_policy.algos[0] if params.kem_policy.algos else "Kyber768"),
-    )
-
-
-def unwrap_file(
-    src: str | Path,
-    dst: str | Path,
-    params: Optional[UnwrapParams],
-) -> UnwrapResult:
-    src_p, dst_p = Path(src), Path(dst)
-    if not src_p.exists():
-        raise ForitechError(f"Input not found: {src_p}")
-
-    if core_unwrap_file is None:
-        raise ForitechError("Crypto core not wired (foritech.crypto.unwrap_core.unwrap_file is missing)")
-
-    meta = core_unwrap_file(src_p, dst_p, params)
-
-    if isinstance(meta, dict):
-        return UnwrapResult(
-            recovered_kid=meta.get("kid"),
-            aad_present=bool(meta.get("aad_present", False)),
-            kem=meta.get("kem", "Kyber768"),
-        )
-    return UnwrapResult(
-        recovered_kid=getattr(meta, "kid", None),
-        aad_present=bool(getattr(meta, "aad_present", False)),
-        kem=getattr(meta, "kem", "Kyber768"),
-    )
-
-
-def wrap_stream(
-    reader: BinaryIO,
-    writer: BinaryIO,
-    recipients: List[Recipient],
-    params: WrapParams,
-) -> WrapResult:
-    with tempfile.TemporaryDirectory() as td:
-        tmp_in = Path(td) / "in.bin"
-        tmp_out = Path(td) / "out.bin"
-        data = reader.read()
-        if isinstance(data, str):
-            data = data.encode()
-        tmp_in.write_bytes(data)
-        res = wrap_file(tmp_in, tmp_out, recipients, params)
-        writer.write(tmp_out.read_bytes())
-    return res
-
-
-def unwrap_stream(reader: BinaryIO, writer: BinaryIO, params: UnwrapParams) -> UnwrapResult:
-    with tempfile.TemporaryDirectory() as td:
-        tmp_in = Path(td) / "in.enc"
-        tmp_out = Path(td) / "out.dec"
-        data = reader.read()
-        if isinstance(data, str):
-            data = data.encode()
-        tmp_in.write_bytes(data)
-        res = unwrap_file(tmp_in, tmp_out, params)
-        writer.write(tmp_out.read_bytes())
-    return res
+# ── Реекспорт на ядрата (точни алиаси) ─────────────────────────────────────────
+from .crypto.wrap_core import wrap_file as wrap_file
+from .crypto.unwrap_core import unwrap_file as unwrap_file
+from .crypto.stream_core import wrap_stream as wrap_stream
+from .crypto.stream_core import unwrap_stream as unwrap_stream
 
 
 def detect_metadata(src: str | Path):
+    """Връща kid/nonce/AAD/KEM + STREAM/CHUNK (ако е стрийминг контейнер)."""
+    from dataclasses import dataclass
+    p = Path(src)
+    if not p.exists():
+        raise ForitechError(f"Input not found: {p}")
+
     @dataclass
     class Detected:
-        kid: Optional[str]
-        nonce: Optional[str]
+        kid: str | None
+        nonce: str | None
         aad_present: bool
-        kem: Optional[str]
+        kem: str | None
+        stream: bool = False
+        chunk_size: int | None = None
 
-    src_p = Path(src)
-    if not src_p.exists():
-        raise ForitechError(f"Input not found: {src_p}")
+    with p.open("rb") as f:
+        magic = f.read(5)
+        if magic != b"FTECH":
+            raise ForitechError("Not a Foritech container (bad MAGIC)")
+        ver = f.read(1)
+        if not ver:
+            raise ForitechError("Truncated header (no version)")
+        hlen = struct.unpack("<I", f.read(4))[0]
+        header_json = f.read(hlen)
 
-    if core_detect_metadata is None:
-        # Няма ядро за meta – връщаме минимален placeholder (по-добре отколкото да паднем)
-        return Detected(kid=None, nonce=None, aad_present=False, kem=None)
-
-    meta = core_detect_metadata(src_p)
-    if isinstance(meta, dict):
-        return Detected(
-            kid=meta.get("kid"),
-            nonce=meta.get("nonce"),
-            aad_present=bool(meta.get("aad_present", False)),
-            kem=meta.get("kem"),
-        )
-    # ако е обект с атрибути
+    hdr = json.loads(header_json.decode("utf-8"))
+    kid = hdr.get("kid")
+    kem = (hdr.get("alg") or {}).get("kem")
+    aad_present = hdr.get("aad_b64") is not None
+    nonce = hdr.get("nonce_b64") or hdr.get("nonce")
+    s = hdr.get("stream") or {}
     return Detected(
-        kid=getattr(meta, "kid", None),
-        nonce=getattr(meta, "nonce", None),
-        aad_present=bool(getattr(meta, "aad_present", False)),
-        kem=getattr(meta, "kem", None),
+        kid=kid,
+        nonce=nonce,
+        aad_present=aad_present,
+        kem=kem,
+        stream=bool(s),
+        chunk_size=s.get("chunk_size"),
     )

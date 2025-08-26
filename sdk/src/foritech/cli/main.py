@@ -1,114 +1,115 @@
 from __future__ import annotations
-import argparse, os, sys
+import argparse
 from pathlib import Path
 
 from foritech.api import (
-    wrap_file, unwrap_file, detect_metadata,
-    wrap_stream as api_wrap_stream, unwrap_stream as api_unwrap_stream,
+    wrap_file, unwrap_file, wrap_stream, unwrap_stream, detect_metadata
 )
-from foritech.errors import ForitechError
-from foritech.models import WrapParams, UnwrapParams, RawKemRecipient, Recipient
+from foritech.models import RawKemRecipient, WrapParams, UnwrapParams
 
-DEFAULT_STREAM_THRESHOLD_MIB = 64  # 64 MiB
 
-def parse_recipient(s: str) -> Recipient:
-    if s.startswith("raw:"):
-        return RawKemRecipient(s.split(":",1)[1])
-    raise SystemExit(f"Unsupported recipient syntax: {s}")
+def _build_recipients(recipient_args: list[str]):
+    recips = []
+    for r in recipient_args:
+        if r.startswith("raw:"):
+            recips.append(RawKemRecipient(r.split("raw:", 1)[1]))
+        else:
+            raise ValueError(f"Unsupported recipient: {r}")
+    return recips
+
+
+def _print_meta(prefix: str, meta) -> None:
+    out = f"{prefix}: kid={meta.kid} nonce={meta.nonce} AAD={meta.aad_present} KEM={meta.kem}"
+    if hasattr(meta, "stream"):
+        out += f" STREAM={getattr(meta, 'stream', False)}"
+        if getattr(meta, "stream", False) and getattr(meta, "chunk_size", None):
+            out += f" CHUNK={meta.chunk_size}"
+    print(out)
+
 
 def cmd_wrap(args: argparse.Namespace) -> int:
-    inp = Path(args.input); outp = Path(args.output)
-    recipients = [parse_recipient(r) for r in args.recipient]
-    aad = args.aad.encode("utf-8") if args.aad is not None else None
-    params = WrapParams(kid=args.kid, aad=aad)
-
-    # decide streaming
-    threshold_bytes = int(args.stream_threshold_mib) * 1024 * 1024
-    size = inp.stat().st_size
-    use_stream = args.stream or (not args.no_stream and size >= threshold_bytes)
-
     try:
-        if use_stream:
-            with inp.open("rb") as r, outp.open("wb") as w:
-                meta = api_wrap_stream(r, w, recipients, params)
-                print(f"OK: kid={meta.kid} nonce={meta.nonce} AAD={meta.aad_present} KEM={meta.kem} STREAM=True")
+        in_p, out_p = Path(args.input), Path(args.output)
+        recips = _build_recipients(args.recipient)
+        params = WrapParams(kid=args.kid, aad=args.aad.encode("utf-8") if args.aad else None)
+
+        size = in_p.stat().st_size if in_p.exists() else 0
+        thr_mib = int(args.stream_threshold_mib or 64)
+        threshold = thr_mib * 1024 * 1024
+        force_stream = bool(args.stream)
+        force_no_stream = bool(args.no_stream)
+        do_stream = force_stream or (not force_no_stream and size >= threshold)
+
+        if do_stream:
+            with in_p.open("rb") as r, out_p.open("wb") as w:
+                wrap_stream(r, w, recips, params)
         else:
-            meta = wrap_file(inp, outp, recipients, params)
-            print(f"OK: kid={meta.kid} nonce={meta.nonce} AAD={meta.aad_present} KEM={meta.kem}")
+            wrap_file(in_p, out_p, recips, params)
+
+        meta = detect_metadata(out_p)
+        _print_meta("OK", meta)
         return 0
-    except ForitechError as e:
-        print(f"ERROR: {e}", file=sys.stderr); return 2
     except Exception as e:
-        print(f"UNEXPECTED: {e}", file=sys.stderr); return 1
+        print(f"ERROR: {e}")
+        return 1
+
 
 def cmd_meta(args: argparse.Namespace) -> int:
     try:
         meta = detect_metadata(Path(args.input))
-        print(f"META: kid={meta.kid} nonce={meta.nonce} AAD={meta.aad_present} KEM={meta.kem}")
+        _print_meta("META", meta)
         return 0
-    except ForitechError as e:
-        print(f"ERROR: {e}", file=sys.stderr); return 2
     except Exception as e:
-        print(f"UNEXPECTED: {e}", file=sys.stderr); return 1
+        print(f"ERROR: {e}")
+        return 1
+
 
 def cmd_unwrap(args: argparse.Namespace) -> int:
-    inp = Path(args.input); outp = Path(args.output)
-    params = UnwrapParams()
-
     try:
-        if args.stream:
-            # force streaming
-            with inp.open("rb") as r, outp.open("wb") as w:
-                meta = api_unwrap_stream(r, w, params)
-                print(f"OK: kid={meta.recovered_kid} AAD={meta.aad_present} KEM={meta.kem} STREAM=True")
-                return 0
-        # try streaming first; if not a streaming container -> fall back
-        try:
-            with inp.open("rb") as r, outp.open("wb") as w:
-                meta = api_unwrap_stream(r, w, params)
-                print(f"OK: kid={meta.recovered_kid} AAD={meta.aad_present} KEM={meta.kem} STREAM=True")
-                return 0
-        except Exception as e:
-            if "Not a streaming container" not in str(e):
-                raise
-            # fallback to file-mode
-            meta = unwrap_file(inp, outp, params)
-            print(f"OK: kid={meta.recovered_kid} AAD={meta.aad_present} KEM={meta.kem}")
-            return 0
-    except ForitechError as e:
-        print(f"ERROR: {e}", file=sys.stderr); return 2
+        in_p, out_p = Path(args.input), Path(args.output)
+        meta = detect_metadata(in_p)
+        # ако контейнерът е stream → ползваме stream разпаковането
+        if getattr(meta, "stream", False):
+            with in_p.open("rb") as r, out_p.open("wb") as w:
+                unwrap_stream(r, w, UnwrapParams())
+        else:
+            unwrap_file(in_p, out_p, UnwrapParams())
+        # покажи реалния meta (след wrap/unwrap консистентен)
+        meta2 = detect_metadata(in_p)
+        _print_meta("OK", meta2)
+        return 0
     except Exception as e:
-        print(f"UNEXPECTED: {e}", file=sys.stderr); return 1
+        print(f"ERROR: {e}")
+        return 1
 
-def main() -> int:
-    p = argparse.ArgumentParser(prog="foritech", description="Foritech CLI")
-    sp = p.add_subparsers(dest="cmd", required=True)
 
-    pw = sp.add_parser("wrap", help="Wrap (encrypt) file")
-    pw.add_argument("--in",  dest="input",  required=True)
-    pw.add_argument("--out", dest="output", required=True)
-    pw.add_argument("--recipient", action="append", required=True, help="e.g. raw:/path/to/kyber768_pub.bin (can be repeated)")
-    pw.add_argument("--kid", required=True)
-    pw.add_argument("--aad", required=False)
-    # streaming flags
-    pw.add_argument("--stream", action="store_true", help="force streaming")
-    pw.add_argument("--no-stream", action="store_true", help="force non-streaming")
-    pw.add_argument("--stream-threshold-mib", type=int, default=DEFAULT_STREAM_THRESHOLD_MIB,
-                    help=f"auto-enable streaming when input >= this size (MiB), default {DEFAULT_STREAM_THRESHOLD_MIB}")
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="foritech", description="Foritech CLI")
+    sub = ap.add_subparsers(dest="cmd", required=True)
 
-    pu = sp.add_parser("unwrap", help="Unwrap (decrypt) file")
-    pu.add_argument("--in",  dest="input",  required=True)
-    pu.add_argument("--out", dest="output", required=True)
-    pu.add_argument("--stream", action="store_true", help="force streaming (if container is streaming)")
+    p_wrap = sub.add_parser("wrap", help="Wrap (encrypt) file")
+    p_wrap.add_argument("--in", dest="input", required=True)
+    p_wrap.add_argument("--out", dest="output", required=True)
+    p_wrap.add_argument("--recipient", action="append", required=True, help="e.g. raw:/path/to/kyber768_pub.bin")
+    p_wrap.add_argument("--kid", default=None)
+    p_wrap.add_argument("--aad", default=None)
+    p_wrap.add_argument("--stream", action="store_true", help="Force streaming mode")
+    p_wrap.add_argument("--no-stream", action="store_true", help="Force non-stream mode (in-memory)")
+    p_wrap.add_argument("--stream-threshold-mib", type=int, default=64, help="Auto streaming threshold MiB")
+    p_wrap.set_defaults(func=cmd_wrap)
 
-    pm = sp.add_parser("meta", help="Show metadata")
-    pm.add_argument("--in", dest="input", required=True)
+    p_unwrap = sub.add_parser("unwrap", help="Unwrap (decrypt) file")
+    p_unwrap.add_argument("--in", dest="input", required=True)
+    p_unwrap.add_argument("--out", dest="output", required=True)
+    p_unwrap.set_defaults(func=cmd_unwrap)
 
-    args = p.parse_args()
-    if args.cmd == "wrap": return cmd_wrap(args)
-    if args.cmd == "unwrap": return cmd_unwrap(args)
-    if args.cmd == "meta": return cmd_meta(args)
-    p.print_help(); return 1
+    p_meta = sub.add_parser("meta", help="Show metadata")
+    p_meta.add_argument("--in", dest="input", required=True)
+    p_meta.set_defaults(func=cmd_meta)
+
+    args = ap.parse_args(argv)
+    return args.func(args)
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
