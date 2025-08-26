@@ -112,3 +112,21 @@ foritech.tlspqc (TLS-PQC клиент със сесии)
 pytest -q
 # цел: всички зелено; интеграционният TLS-PQC тест се skip-ва без Kyber ключове.
 
+
+## Makefile бързи цели
+
+```bash
+make gen-keys             # генерира Kyber ключове и подсказва FORITECH_SK
+make x509-self-spki       # self-signed X.509 с SPKI PQC extension
+make run-server           # стартира TLS-PQC демо сървър (ползва $(CERT)/$(KEY))
+make run-client           # клиент (handshake + demo обмен)
+make ping                 # handshake + batch-и + ротация + bye (един изстрел)
+
+make wrap-demo            # малък файл: wrap/unwrap
+make stream-demo          # 128MiB файл: авто-stream wrap/unwrap
+
+make test                 # pytest -q
+make fmt && make lint     # ruff fix / check
+make typecheck            # mypy
+make clean                # чисти локални артефакти (*.pem/*.key/enc/out)
+
