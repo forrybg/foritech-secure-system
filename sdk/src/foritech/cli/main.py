@@ -225,9 +225,83 @@ def main(argv: list[str] | None = None) -> int:
     p_xextract.add_argument("--in", dest="input", required=True)
     p_xextract.add_argument("--out", dest="out", required=True)
     p_xextract.set_defaults(func=cmd_x509_extract_pqc)
+    try:
+        augment_with_keys_and_verify(ap)
+    except Exception:
+        pass
 
     args = ap.parse_args(argv)
     return args.func(args)
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+# === auto-appended: keys + x509-verify ===
+def augment_with_keys_and_verify(p):
+    sub = None
+    for line in p._positionals._actions:  # type: ignore[attr-defined]
+        pass
+    sub = p._subparsers._group_actions[0]  # type: ignore[attr-defined]
+
+    def cmd_x509_verify(a):
+        from pathlib import Path
+        from ..x509_utils import verify_chain
+        leaf = Path(a.leaf).read_bytes()
+        chain = Path(a.chain).read_bytes() if a.chain else None
+        root = Path(a.root).read_bytes() if a.root else None
+        try:
+            res = verify_chain(leaf, chain, root, check_time=True)
+            print(f"CHAIN OK depth={res['depth']}")
+            for s in res["subjects"]:
+                print(" -", s)
+            return 0
+        except Exception as e:
+            print("VERIFY ERROR:", e)
+            return 2
+
+    xv = sub.add_parser("x509-verify", help="Verify leaf + optional chain + optional root")
+    xv.add_argument("--leaf", required=True)
+    xv.add_argument("--chain", default=None)
+    xv.add_argument("--root", default=None)
+    xv.set_defaults(func=cmd_x509_verify)
+
+    def cmd_keygen(a):
+        from ..key_utils import keygen_kyber
+        info = keygen_kyber(a.kid, a.out_dir)
+        print(f"Key generated: kid={info['kid']} kem={info['kem']}")
+        print(f"  pub: {info['pub']}")
+        print(f"  sec: {info['sec']}")
+        print("Tip: export FORITECH_SK to your secret key for unwrap auto-detect.")
+        return 0
+
+    kg = sub.add_parser("keygen", help="Generate Kyber768 keypair")
+    kg.add_argument("--kid", default=None)
+    kg.add_argument("--out-dir", default=None)
+    kg.set_defaults(func=cmd_keygen)
+
+    def cmd_key_list(a):
+        from ..key_utils import list_keys
+        lst = list_keys(a.dir)
+        if not lst:
+            print("No keys found.")
+            return 1
+        for e in lst:
+            print(f"{e['kid']:>18}  kem={e['kem']}  pub={'yes' if e['pub'] else 'no '}  sec={'yes' if e['sec'] else 'no '}")
+        return 0
+
+    kl = sub.add_parser("key-list", help="List Kyber keys")
+    kl.add_argument("--dir", default=None)
+    kl.set_defaults(func=cmd_key_list)
+
+    def cmd_key_show(a):
+        from ..key_utils import show_key
+        info = show_key(kid=a.kid, path=a.path)
+        print(f"{info['path']}  kind={info['kind']} kem={info['kem']} size={info['size']}")
+        return 0
+
+    ks = sub.add_parser("key-show", help="Show key info by --kid or --path")
+    g = ks.add_mutually_exclusive_group(required=True)
+    g.add_argument("--kid", default=None)
+    g.add_argument("--path", default=None)
+    ks.set_defaults(func=cmd_key_show)
