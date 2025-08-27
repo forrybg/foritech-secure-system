@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-27
+- cli(keys,x509): add keygen/list/show and x509-verify; ignore third_party/
+- tests: remove temporary banner smoke test
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- chore: bump version to 0.4.2 (SEC-2: strict + frame order)
+- chore(progress): auto-update PROGRESS.md
+- ci(demo): add nightly TLS-PQC smoke (self-hosted; skips if oqs missing)
+- chore(progress): auto-update PROGRESS.md
+- docs: mention manual Demo • TLS-PQC smoke workflow
+- chore(progress): auto-update PROGRESS.md
+
+## 2025-08-27
 - chore(progress): auto-update PROGRESS.md
 - chore: bump version to 0.4.2 (SEC-2: strict + frame order)
 - chore(progress): auto-update PROGRESS.md
