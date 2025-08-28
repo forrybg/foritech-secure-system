@@ -11,6 +11,7 @@
 - ops: add diag/backup utilities + BACKUP.md
 - chore(progress): nightly snapshot
 - chore(progress): auto-update PROGRESS.md
+- checkmark за “clean venv”
 
 ## 2025-08-28
 - chore: code tidy + verify all tests green
