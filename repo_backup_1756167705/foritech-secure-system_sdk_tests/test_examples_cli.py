@@ -19,13 +19,12 @@ except NameError:
     KEM_FOR_TESTS = _pick_kem_for_tests()
 # --- end header ---
 # sdk/tests/test_examples_cli.py
-import subprocess, sys, tempfile
+import subprocess
+import sys
 from pathlib import Path
 import pytest
 
-import os
 
-import os
 try:
     import oqs as _oqs
     _ENABLED_KEMS = set(getattr(_oqs, 'get_enabled_kems', lambda: [])())

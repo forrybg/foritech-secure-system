@@ -1,4 +1,9 @@
-import os, ssl, socket, time, subprocess, sys
+import os
+import ssl
+import socket
+import time
+import subprocess
+import sys
 from pathlib import Path
 import pytest
 

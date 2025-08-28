@@ -1,5 +1,6 @@
 from __future__ import annotations
-import base64, json
+import base64
+import json
 from datetime import datetime, timezone, timedelta
 from typing import Tuple, Optional
 

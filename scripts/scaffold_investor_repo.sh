@@ -1,159 +1,117 @@
 #!/usr/bin/env bash
 set -euo pipefail
-#
-# Scaffold a separate public demo repo for investors.
-# Usage:
-#   bash scripts/scaffold_investor_repo.sh [TARGET_DIR] [REPO_NAME]
-# Defaults:
-#   TARGET_DIR = ../foritech-investor-demo
-#   REPO_NAME  = foritech-investor-demo
-#
-# After generation:
-#   cd TARGET_DIR
-#   git init
-#   git add -A
-#   git commit -m "chore: initial investor demo"
-#   git branch -M main
-#   git remote add origin git@github.com:<YOUR_GH_USER>/<REPO_NAME>.git
-#   git push -u origin main
-#
+HERE="$(cd "$(dirname "$0")"/.. && pwd)"
+TARGET="${1:-$HERE/../foritech-investor-demo}"
 
-TARGET_DIR="${1:-../foritech-investor-demo}"
-REPO_NAME="${2:-foritech-investor-demo}"
+echo ">> Target: $TARGET"
+if [[ -e "$TARGET" && ! -d "$TARGET" ]]; then
+  echo "ERROR: $TARGET exists and is not a directory" >&2
+  exit 2
+fi
 
-echo "[i] Creating investor demo repo at: ${TARGET_DIR}"
-mkdir -p "${TARGET_DIR}/scripts" "${TARGET_DIR}/.github/workflows" "${TARGET_DIR}/docs"
+mkdir -p "$TARGET"/{scripts,certs}
+cd "$TARGET"
 
-# ---------------- README (Investor-facing) ----------------
-cat > "${TARGET_DIR}/README.md" <<'EOF2'
-# Foritech — Post-Quantum File Security (Investor Demo)
+# .gitignore (не качваме venv, cache и чувствителни certs/keys)
+cat > .gitignore <<'GIT'
+.venv/
+__pycache__/
+*.pyc
+certs/
+GIT
 
-**TL;DR:** Реален SDK + CLI за *post-quantum* защита на файлове (Kyber768 KEM + AEAD), X.509 хибридни екстенции (raw/SPKI), и леки TLS-PQC сесии (демо).  
-**Статус:** стабилен MVP с auto-streaming, tamper checks, и 13+ теста (green).  
+# README с инструкции
+cat > README.md <<'MD'
+# Foritech Investor Demo
 
-## Highlights
-# - **Wrap/Unwrap с Kyber768 (liboqs)** и ChaCha20-Poly1305 (AEAD).
-# - **Streaming контейнер** (авто над 64MiB; forced флаг за малки файлове).
-# - **X.509 хибридни екстенции**: raw и SPKI-b64 в private OID; CLI: `x509-make`, `x509-info`, `x509-extract-pqc`.
-# - **TLS-PQC session demo**: еднократен KEM обмен + симетрична сесия; ping/pong и rotatable epochs.
-# - **CI**: леки проверки и док; full crypto тестове – отделно (изискват liboqs).
+Minimal demo to show:
+- PQC TLS session (Kyber768) with our sample server/client
+- File wrap/unwrap via the `foritech` CLI
 
-> Този репозиторий показва *демо изживяване*. Истинският код е в основното repo:
-> - Core SDK/CLI: `forrybg/foritech-secure-system`
+## 0) Prepare venv
 
-#---
-
-## Live Demo (5 мин)
-
-> Предпоставки: Python 3.12+, `foritech` CLI инсталиран от основното репо (editable), Kyber ключове.
-
-1) **Инсталация на CLI (от основния проект)**
 ```bash
-git clone https://github.com/forrybg/foritech-secure-system.git
-cd foritech-secure-system
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e .[dev]
-foritech --help
+python3 -m venv .venv
+source .venv/bin/activate
+# Install the SDK from the sibling repo:
+pip install -e ../foritech-secure-system
 
-python - <<'PY'
-import oqs, pathlib
-p = pathlib.Path.home()/".foritech/keys"; p.mkdir(parents=True, exist_ok=True)
-with oqs.KeyEncapsulation("Kyber768") as kem:
-    pk, sk = kem.generate_keypair()
-    (p/"kyber768_pub.bin").write_bytes(pk)
-    (p/"kyber768_sec.bin").write_bytes(sk)
-print("Keys at:", p)
-PY
+If you want Kyber (TLS-PQC) support, also ensure liboqs and oqs python are installed as per the main repo’s scripts/dev_install_oqs.sh.
+1) Bring certs/keys
+
+Copy a fullchain + server key here (or point the run script to your files):
+cp ../foritech-secure-system/pki/issued/leaf-sub1_fullchain.pem certs/server_cert.pem
+cp ../foritech-secure-system/pki/issued/leaf-sub1.key         certs/server_key.pem
+
+Export Kyber secret (if different, adjust path):
 export FORITECH_SK="$HOME/.foritech/keys/kyber768_sec.bin"
 
-bash scripts/demo_small_stream.sh
-bash scripts/demo_big_stream.sh
-bash scripts/demo_x509_spki.sh
+2) Run
 
-Why Now
+Terminal A:
+scripts/run_server.sh
 
-NIST финализира ML-KEM (Kyber) → натиск към PQC миграция.
+Terminal B:
+scripts/run_client.sh
 
-Storage/backup/cloud обмените са low hanging fruit за PQC KEM + AEAD.
+You should see the KEM info and a pong:... reply.
+3) File wrap/unwrap smoke
+echo "hi" > s.txt
+foritech wrap --in s.txt --out s.enc --recipient raw:$HOME/.foritech/keys/kyber768_pub.bin --kid demo
+foritech unwrap --in s.enc --out s.out
+diff -u s.txt s.out && echo "OK ✅"
 
-Нашият формат е прост, практичен и съвместим с liboqs.
+This demo repo intentionally ignores certs/ in git. Do not commit secrets.
+MD
+Копие на TLS-PQC server/client от основното repo (за да е самодостатъчно)
 
-Roadmap Snapshot
+cp "$HERE/scripts/tls_pqc_server.py" scripts/tls_pqc_server.py
+cp "$HERE/scripts/tls_pqc_client.py" scripts/tls_pqc_client.py
 
-✅ Streaming контейнер + SEC-1..3 проверки (tamper/order/strict).
+Run-скриптове, удобни за инвеститорската демо среда
 
-✅ X.509 raw/SPKI екстенции и CLI.
+cat > scripts/run_server.sh <<'SRV'
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
 
-✅ TLS-PQC session demo (KEM bootstrap + epochs).
+CERT="${1:-certs/server_cert.pem}"
+KEY="${2:-certs/server_key.pem}"
+KYBER_SK="${KYBER_SK:-${FORITECH_SK:-$HOME/.foritech/keys/kyber768_sec.bin}}"
 
-⏭️ Multi-KEM fallback (Kyber+Classic).
+if [[ ! -f "$CERT" || ! -f "$KEY" ]]; then
+echo "Missing cert/key in ./certs (or pass paths):" >&2
+echo " scripts/run_server.sh [cert] [key]" >&2
+exit 2
+fi
 
-⏭️ Docker образ (liboqs + SDK) и GitHub Packages.
+exec python3 scripts/tls_pqc_server.py
+--host 0.0.0.0 --port 8443
+--cert "$CERT"
+--key "$KEY"
+--kyber-sk "$KYBER_SK"
+SRV
+chmod +x scripts/run_server.sh
 
-⏭️ PyPI „lite“ пакет с graceful fallback при липса на liboqs.
+cat > scripts/run_client.sh <<'CLI'
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+HOST="${1:-127.0.0.1}"
+PORT="${2:-8443}"
+exec python3 scripts/tls_pqc_client.py --host "$HOST" --port "$PORT"
+CLI
+chmod +x scripts/run_client.sh
 
-Security Notes
-
-Не комитвайте ключове/секрети. Генерирайте локално.
-
-Контейнерът е AEAD-authenticated; header MAC + frame checks.
-
-Настройте FORITECH_SK за unwrap и TLS-PQC демо.
-
-License
-
-MIT
-EOF2
-
-#---------------- LICENSE ----------------
-
-cat > "${TARGET_DIR}/LICENSE" <<'EOF2'
-MIT License
-
-Copyright (c) 2025
-...
-EOF2
-
-#---------------- .gitignore ----------------
-
-cat > "${TARGET_DIR}/.gitignore" <<'EOF2'
-.DS_Store
-pycache/
-.venv/
-*.enc
-*.out
-*.pem
-*.key
-*.bin
-*.zip
-EOF2
-
-#---------------- Docs/Pitch ----------------
-
-cat > "${TARGET_DIR}/docs/PITCH.md" <<'EOF2'
-
-Foritech — Investor Pitch (Short)
-
-Problem: Класическият RSA/ECDH в обмена на ключове е уязвим за бъдещи квантови атаки.
-Solution: Лек и практичен файл-контейнер (KEM Kyber768 + AEAD), X.509 екстенции и TLS-PQC сесии — с готов SDK/CLI.
-
-Why Us: Фокус върху реални use-cases (backup/restore, S3/MinIO обмен), лесна интеграция, стрийминг над големи файлове и проверки (SEC-1..3).
-
-Traction: Green CI, работещи демота, roadmap към Docker/PyPI/Hybrid TLS.
-EOF2
-
-#(тук следват demo_small_stream.sh, demo_big_stream.sh, demo_x509_spki.sh,
-#PowerShell версиите и GitHub Actions — напълно както в текста, който ми прати)
-
-echo "[i] Done."
 echo
-echo "Next:"
-cat <<NEXT
-cd ${TARGET_DIR}
-git init
-git add -A
-git commit -m "chore: initial investor demo"
-git branch -M main
-git remote add origin git@github.com:forrybg/${REPO_NAME}.git
-git push -u origin main
-NEXT
+echo "== Investor demo scaffolded =="
+echo "Location: $TARGET"
+echo "Next steps:"
+echo " 1) cd "$TARGET""
+echo " 2) python3 -m venv .venv && source .venv/bin/activate"
+echo " 3) pip install -e ../foritech-secure-system"
+echo " 4) cp ../foritech-secure-system/pki/issued/leaf-sub1_fullchain.pem certs/server_cert.pem"
+echo " cp ../foritech-secure-system/pki/issued/leaf-sub1.key certs/server_key.pem"
+echo " 5) export FORITECH_SK="$HOME/.foritech/keys/kyber768_sec.bin""
+echo " 6) scripts/run_server.sh # in terminal A"
+echo " scripts/run_client.sh # in terminal B"

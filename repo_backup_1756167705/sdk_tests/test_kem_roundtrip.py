@@ -1,7 +1,6 @@
 import pytest
 
 try:
-    from oqs import KeyEncapsulation  # type: ignore
     OQS_AVAILABLE = True
 except Exception:
     OQS_AVAILABLE = False

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-import subprocess, datetime, os, re, pathlib
+import subprocess
+import datetime
+import re
+import pathlib
 
 REPO = pathlib.Path(__file__).resolve().parents[1]
 PROGRESS = REPO / "PROGRESS.md"

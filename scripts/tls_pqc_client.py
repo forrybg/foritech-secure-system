@@ -1,5 +1,11 @@
 from __future__ import annotations
-import ssl, socket, base64, json, argparse, http.client, os
+import ssl
+import socket
+import base64
+import json
+import argparse
+import http.client
+import os
 from typing import List, Tuple
 
 try:

@@ -1,5 +1,12 @@
 from __future__ import annotations
-import ssl, json, os, base64, argparse, time, threading, collections
+import ssl
+import json
+import os
+import base64
+import argparse
+import time
+import threading
+import collections
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives import hashes

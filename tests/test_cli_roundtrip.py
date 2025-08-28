@@ -1,4 +1,5 @@
-import subprocess, pytest
+import subprocess
+import pytest
 from pathlib import Path
 
 PUB = Path.home() / ".foritech/keys/kyber768_pub.bin"

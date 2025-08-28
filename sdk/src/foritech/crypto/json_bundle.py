@@ -1,4 +1,5 @@
-import base64, json
+import base64
+import json
 from typing import Dict
 
 def to_b64(b: bytes) -> str:

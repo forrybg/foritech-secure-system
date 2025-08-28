@@ -1,5 +1,5 @@
 from pathlib import Path
-import subprocess, json, struct
+import subprocess
 
 def test_cli_x509_make(tmp_path: Path):
     pqc_pub = b"demo-pqc-pub"

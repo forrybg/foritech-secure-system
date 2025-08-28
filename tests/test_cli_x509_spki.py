@@ -1,7 +1,5 @@
 from pathlib import Path
 import subprocess
-import shutil
-import sys
 
 def run(args):
     return subprocess.run(args, capture_output=True, text=True)

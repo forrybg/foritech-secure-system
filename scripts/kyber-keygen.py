@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-import os, pathlib, sys
+import os
+import pathlib
+import sys
 try:
     import oqs
-except Exception as e:
+except Exception:
     print("ERROR: pyoqs (oqs) is required. Try: pip install pyoqs", file=sys.stderr)
     sys.exit(1)
 

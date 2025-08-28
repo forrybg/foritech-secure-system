@@ -1,6 +1,5 @@
 from minio import Minio
 from datetime import datetime
-import os
 import base64
 import requests
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional, Dict
 from cryptography import x509
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa, ec
 from cryptography.hazmat.backends import default_backend
 import datetime

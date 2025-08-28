@@ -1,6 +1,7 @@
-import os, sys, json, subprocess, tempfile, shutil
+import os
+import sys
+import subprocess
 from pathlib import Path
-import pytest
 
 # Взимаме KEM от env или по подразбиране Kyber768 (широко поддържан)
 KEM_FOR_TESTS = os.environ.get("FORITECH_TEST_KEM", "Kyber768")

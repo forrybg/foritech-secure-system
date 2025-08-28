@@ -1,5 +1,8 @@
 from __future__ import annotations
-import os, json, base64, struct
+import os
+import json
+import base64
+import struct
 from pathlib import Path
 from typing import Any, List
 

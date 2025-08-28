@@ -1,6 +1,9 @@
-import argparse, json, base64, os, sys
+import argparse
+import json
+import base64
+import os
+import sys
 from pathlib import Path
-from typing import List
 from Crypto.Cipher import AES
 
 from foritech.api import (

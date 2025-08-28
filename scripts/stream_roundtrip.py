@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import os, sys, hashlib
+import sys
+import hashlib
 from pathlib import Path
 from foritech.api import wrap_stream, unwrap_stream
 from foritech.models import RawKemRecipient, WrapParams, UnwrapParams

@@ -1,5 +1,7 @@
 from pathlib import Path
-import subprocess, json, struct
+import subprocess
+import json
+import struct
 
 def read_header(path: Path) -> dict:
     with path.open("rb") as f:

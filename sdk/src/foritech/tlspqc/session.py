@@ -1,5 +1,10 @@
 from __future__ import annotations
-import ssl, socket, http.client, json, base64, os
+import ssl
+import socket
+import http.client
+import json
+import base64
+import os
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
@@ -15,7 +20,7 @@ AAD_BASE  = b"foritech-demo-session"
 
 try:
     import oqs  # liboqs-python
-except Exception as e:
+except Exception:
     oqs = None
 
 class TLSError(ForitechError):

@@ -19,12 +19,9 @@ except NameError:
     KEM_FOR_TESTS = _pick_kem_for_tests()
 # --- end header ---
 # sdk/tests/test_api_roundtrip.py
-import os, json, pytest
-
-import os
-
-import os
 import pytest
+
+
 try:
     import oqs as _oqs
     _ENABLED_KEMS = set(getattr(_oqs, 'get_enabled_kems', lambda: [])())

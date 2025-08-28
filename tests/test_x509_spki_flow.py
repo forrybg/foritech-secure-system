@@ -1,5 +1,6 @@
 from pathlib import Path
-import json, subprocess, os
+import json
+import subprocess
 
 def test_spki_json_and_extract(tmp_path: Path):
     pub = Path.home()/".foritech/keys/kyber768_pub.bin"

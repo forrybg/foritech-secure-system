@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, os, json
+import argparse
+import os
+import json
 from dataclasses import dataclass, field
 from typing import List, Optional
 from datetime import datetime

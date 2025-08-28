@@ -1,10 +1,9 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import List, BinaryIO
-import json, struct
+import json
+import struct
 
 from .errors import ForitechError
-from .models import Recipient, WrapParams, UnwrapParams, WrapResult, UnwrapResult  # (за съвместимост)
 
 # ── Реекспорт на ядрата (точни алиаси) ─────────────────────────────────────────
 from .crypto.wrap_core import wrap_file as wrap_file

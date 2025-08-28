@@ -37,3 +37,26 @@ spki_*.bin
 server_cert.pem
 fullchain.pem
 repo_backups/
+
+# local env & backups
+.venv/
+backups/
+
+# local PKI (не качваме тайни)
+pki/**
+!pki/bundles/
+!pki/bundles/*.pem
+
+# local symlinks/creds
+server_cert.pem
+server_key.pem
+
+# build/cache
+__pycache__/
+*.pyc
+*.pyo
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+third_party/

@@ -1,9 +1,13 @@
 # в началото на sdk/tests/test_json_bundle.py
-import os, pytest
+import os
+import pytest
 if not os.path.exists('foritech'):
     pytest.skip("Skipping legacy test expecting 'foritech' path; will be refactored to tmp_path.", allow_module_level=True)
 
-import subprocess, shlex, json, os
+import subprocess
+import shlex
+import json
+import os
 
 def run(cmd: str):
     return subprocess.run(shlex.split(cmd), capture_output=True, text=True)

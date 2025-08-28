@@ -1,5 +1,7 @@
 from pathlib import Path
-import json, struct, pytest
+import json
+import struct
+import pytest
 from foritech.api import wrap_stream, unwrap_stream
 from foritech.models import RawKemRecipient, WrapParams, UnwrapParams
 
