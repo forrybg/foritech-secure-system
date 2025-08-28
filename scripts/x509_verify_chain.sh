@@ -1,18 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Verify a leaf + optional chain + optional root
+LEAF="${1:-pki/issued/leaf-sub1.pem}"
+CHAIN="${2:-pki/issued/leaf-sub1_fullchain.pem}"
+ROOT="${3:-pki/root/root.pem}"
 
-LEAF="${LEAF:-$1}"
-CHAIN="${CHAIN:-${2:-}}"
-ROOT="${ROOT:-${3:-}}"
+if [ ! -f "$LEAF" ]; then echo "ERR: missing leaf: $LEAF" >&2; exit 2; fi
+if [ ! -f "$CHAIN" ]; then echo "ERR: missing chain: $CHAIN" >&2; exit 2; fi
+if [ ! -f "$ROOT" ];  then echo "ERR: missing root:  $ROOT" >&2; exit 2; fi
 
-if [[ -z "$LEAF" ]]; then
-  echo "Usage: $0 <leaf.pem> [chain.pem] [root.pem]" >&2
-  exit 2
-fi
-
-args=( x509-verify --leaf "$LEAF" )
-[[ -n "$CHAIN" ]] && args+=( --chain "$CHAIN" )
-[[ -n "$ROOT"  ]] && args+=( --root  "$ROOT" )
-
-exec foritech "${args[@]}"
+foritech x509-verify --leaf "$LEAF" --chain "$CHAIN" --root "$ROOT"
