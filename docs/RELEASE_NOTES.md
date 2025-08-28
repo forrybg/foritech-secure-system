@@ -25,3 +25,4 @@
 - Code tidy (ruff), no functional changes
 - Investor demo TLS quickstart
 - CA bundles and verification docs
+- Clean venv, deterministic tests
