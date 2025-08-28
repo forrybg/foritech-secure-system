@@ -1,5 +1,17 @@
 # Foritech Secure System — Progress Log
 
+## 2025-08-28
+- chore(progress): auto-update PROGRESS.md
+- Revert "Add scripts/ca_make_subca.sh (intermediate CA helper)"
+- Add scripts/ca_make_subca.sh (intermediate CA helper)
+- chore(progress): auto-update PROGRESS.md
+- docs(pki): Root→Leaf playbook + helper scripts (no breaking changes)
+- chore(progress): auto-update PROGRESS.md
+- chore: add secret scan/local excludes; release notes & security checklist
+- chore(progress): auto-update PROGRESS.md
+- chore: bump version to 0.5.0 (SEC hardening, keys, X.509 verify, TLS-PQC sessions)
+- chore(progress): auto-update PROGRESS.md
+
 ## 2025-08-27
 - Revert "Add scripts/ca_make_subca.sh (intermediate CA helper)"
 - Add scripts/ca_make_subca.sh (intermediate CA helper)
