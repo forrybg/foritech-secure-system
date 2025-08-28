@@ -20,3 +20,8 @@
 
 **Notes**
 - Добавени скриптове за локална хигиена/сканиране: `scripts/scan_secrets.sh`, `scripts/setup_git_exclude.sh`.
+
+## v0.5.1 — tidy & docs
+- Code tidy (ruff), no functional changes
+- Investor demo TLS quickstart
+- CA bundles and verification docs
