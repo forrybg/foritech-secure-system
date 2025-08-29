@@ -51,6 +51,17 @@ def _kem_decap(sk: bytes, ct: bytes) -> bytes:
 
 class Handler(BaseHTTPRequestHandler):
     server_version = "ForitechTLS/3.0"
+
+    def do_GET(self):
+        # Health-check за curl / браузър
+        if self.path in ("/", "/healthz"):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"OK\n")
+        else:
+            self.send_error(404, "Not found")
+
 #
 #   def do_GET(self):
 #   if self.path in ("/", "/healthz"):
@@ -60,6 +71,7 @@ class Handler(BaseHTTPRequestHandler):
 #            self.wfile.write(b"OK")
 #        else:
 #            self.send_error(404, "Not found")
+
 
     def _json(self, code:int, obj:dict):
         data = json.dumps(obj, separators=(",", ":")).encode()
