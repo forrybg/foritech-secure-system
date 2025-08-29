@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-29
+- tls: fix tabs/spaces + GET /healthz; add bg helper (server_bg.sh)
+- chore(progress): auto-update PROGRESS.md
+- fix(server): add minimal do_GET and enforce 4-space indents
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- Update RELEASE_NOTES.md
+- chore(progress): auto-update PROGRESS.md
+- Update PROGRESS.md
+- chore(progress): auto-update PROGRESS.md
+- chore: bump to 0.5.1 (tidy, docs, demo quickstart)
+
+## 2025-08-29
 - fix(server): add minimal do_GET and enforce 4-space indents
 - chore(progress): nightly snapshot
 - chore(progress): auto-update PROGRESS.md
