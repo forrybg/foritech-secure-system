@@ -1,5 +1,17 @@
 # Foritech Secure System — Progress Log
 
+## 2025-08-29
+- chore(progress): auto-update PROGRESS.md
+- Update RELEASE_NOTES.md
+- chore(progress): auto-update PROGRESS.md
+- Update PROGRESS.md
+- chore(progress): auto-update PROGRESS.md
+- chore: bump to 0.5.1 (tidy, docs, demo quickstart)
+- chore(progress): auto-update PROGRESS.md
+- chore: code tidy + verify all tests green
+- chore(progress): auto-update PROGRESS.md
+- pki: add rotation helper + demo run scripts + rotation doc
+
 ## 2025-08-28
 - Update RELEASE_NOTES.md
 - chore(progress): auto-update PROGRESS.md
