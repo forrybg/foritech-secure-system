@@ -1,0 +1,14 @@
+[Unit]
+Description=Foritech PQC health probe
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/foritech-secure-system
+ExecStart=%h/foritech-secure-system/scripts/monitor_health.sh
+User=%u
+Group=%u
+
+[Install]
+WantedBy=multi-user.target

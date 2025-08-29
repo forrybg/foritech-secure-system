@@ -1,0 +1,11 @@
+[Unit]
+Description=Every-minute health check for Foritech PQC
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=60s
+AccuracySec=10s
+Unit=foritech-pqc-monitor.service
+
+[Install]
+WantedBy=timers.target
