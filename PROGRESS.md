@@ -1,5 +1,17 @@
 # Foritech Secure System — Progress Log
 
+## 2025-08-31
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- Create README_quickstart.md
+- chore(progress): auto-update PROGRESS.md
+- tls: fix tabs/spaces + GET /healthz; add bg helper (server_bg.sh)
+- chore(progress): auto-update PROGRESS.md
+- fix(server): add minimal do_GET and enforce 4-space indents
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- Update RELEASE_NOTES.md
+
 ## 2025-08-30
 - chore(progress): auto-update PROGRESS.md
 - Create README_quickstart.md
