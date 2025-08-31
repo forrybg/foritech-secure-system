@@ -60,3 +60,12 @@ __pycache__/
 dist/
 build/
 third_party/
+# private keys / secrets
+.ssh/
+.foritech/keys/
+**/*.key
+**/*_key.pem
+**/key.pem
+
+# allow public certs if needed
+!**/*cert.pem
