@@ -1,6 +1,18 @@
 # Foritech Secure System — Progress Log
 
 ## 2025-08-31
+- chore(progress): auto-update PROGRESS.md
+- monitoring: add health probe + Prometheus textfile + systemd timer
+- chore(progress): auto-update PROGRESS.md
+- tls: fix tabs/spaces + GET /healthz; add bg helper (server_bg.sh)
+- chore(progress): auto-update PROGRESS.md
+- fix(server): add minimal do_GET and enforce 4-space indents
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- Update RELEASE_NOTES.md
+- chore(progress): auto-update PROGRESS.md
+
+## 2025-08-31
 - monitoring: add health probe + Prometheus textfile + systemd timer
 - chore(progress): auto-update PROGRESS.md
 - tls: fix tabs/spaces + GET /healthz; add bg helper (server_bg.sh)
