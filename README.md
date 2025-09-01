@@ -141,3 +141,7 @@ make clean                # чисти локални артефакти (*.pem/
 
 > Ако `liboqs-python (oqs)` липсва на runner-а, job-ът се **скипва** (успешно), без да чупи таблото.
 
+
+---
+### Investor docs
+See **Investor Docs Pack** → https://github.com/forrybg/foritech-investor-demo/tree/docs-pack
