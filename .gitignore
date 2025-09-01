@@ -69,3 +69,12 @@ third_party/
 
 # allow public certs if needed
 !**/*cert.pem
+
+# --- binaries & archives ---
+*.zip
+*.tgz
+*.tar.gz
+*.tar
+repo_backup_*/
+*.bak
+*.tmp
