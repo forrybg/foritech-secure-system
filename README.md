@@ -145,3 +145,6 @@ make clean                # чисти локални артефакти (*.pem/
 ---
 ### Investor docs
 See **Investor Docs Pack** → https://github.com/forrybg/foritech-investor-demo/tree/docs-pack
+
+## Security
+See our **[Security Policy](.github/SECURITY.md)** for how to report vulnerabilities, supported versions, scope, and response timelines.
