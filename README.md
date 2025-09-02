@@ -29,10 +29,8 @@ foritech x509-issue --cn "foritech-leaf" --kem Kyber768 \
 
 3) Преглед на extension-а
 foritech x509-info --in leaf_cert.pem
-# X509: kem=Kyber768 format=raw pqc_pub_b64_len=... v=1
 
 foritech x509-info --in leaf_cert.pem
-# X509: kem=Kyber768 format=raw pqc_pub_b64_len=... v=1
 
 По желание с OpenSSL (OID ще е „непознат“, което е очаквано):
 openssl x509 -in leaf_cert.pem -noout -text | awk '/X509v3 extensions/{flag=1} flag'
