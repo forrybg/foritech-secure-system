@@ -1,6 +1,10 @@
 name: Update PROGRESS.md on main
 
 on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'
   push:
     branches: [ main ]
 

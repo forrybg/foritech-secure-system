@@ -60,3 +60,22 @@ __pycache__/
 dist/
 build/
 third_party/
+# Python / venv
+.venv/
+.venv-clean/
+__pycache__/
+*.pyc
+
+# Reports / logs / artifacts
+logs/
+reports/
+coverage.xml
+*.log
+
+# Local bundles/archives
+repo_bundle_*/
+tree.tgz
+overview.txt
+
+# Secrets baselines (ако не искаш да е в репото)
+.secrets.baseline

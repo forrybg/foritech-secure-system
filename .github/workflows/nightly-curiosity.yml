@@ -1,5 +1,9 @@
 name: Nightly • Curiosity (3.13)
 on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'
   schedule:
     - cron: '10 2 * * *'   # 02:10 UTC (05:10 Sofia)
   workflow_dispatch:
