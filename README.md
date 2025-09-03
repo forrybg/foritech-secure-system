@@ -3,7 +3,13 @@
 Скелет за стабилен SDK/API и CLI.
 
 ## CI
-![CI • 3.12](https://github.com/forrybg/foritech-secure-system/actions/workflows/ci.yml/badge.svg)
+![CI • 3.12](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/ci.yml/badge.svg?branch=main)
+![CodeQL](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/codeql.yml/badge.svg?branch=main)
+![Dependabot Status](https://img.shields.io/badge/Dependabot-active-brightgreen?logo=dependabot)
+![CodeQL](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/codeql.yml/badge.svg?branch=main)
+![Dependabot](https://img.shields.io/badge/Dependabot-active-brightgreen?logo=dependabot)
+
+![CI • 3.12](https://github.com/forrybg/foritech-secure-system/actions/workflows/ci.yml/badge.svg?branch=main)
 ![CI • Lite](https://github.com/forrybg/foritech-secure-system/actions/workflows/ci-lite.yml/badge.svg)
 
 ## Hybrid X.509 (CA / Issue / Info)
