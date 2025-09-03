@@ -1,0 +1,54 @@
+name: Release bundle (code+docs)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  zip-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute version
+        id: v
+        run: echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Create bundle ZIP (safe excludes)
+        run: |
+          NAME="foritech-secure-system-bundle-${{ steps.v.outputs.tag }}.zip"
+          # списък с изключения — пази тайните и боклука извън архива
+          EXCLUDES=(
+            ".git/*"
+            ".github/*"                 # ако искаш да включим workflows, махни този ред
+            ".venv*"
+            ".venv-clean/*"
+            "*__pycache__*"
+            "*.pyc"
+            "logs/*"
+            "repo_backup_*"
+            "repo_bundle_*"
+            "tree.tgz"
+            "pqc_starter_pack.zip"
+            # ключове/сертификати/частни материали:
+            "*.pem"
+            "*.key"
+            "*id_rsa*"
+            "*id_ed25519*"
+            "pki/*key*"
+            "pki/*private*"
+            "pqc-tls/shared/*"
+          )
+          zip -r "$NAME" . -x "${EXCLUDES[@]}"
+          ls -lh "$NAME"
+
+      - name: Attach bundle to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: foritech-secure-system-bundle-${{ steps.v.outputs.tag }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
