@@ -1,11 +1,33 @@
+ci/codeql-basic
 name: ci
 on:
   push: { branches: ["main"] }
   pull_request: { branches: ["main"] }
+ci/codeql-basic
+name: ci
+on:
+  push: { branches: ["main"] }
+  pull_request: { branches: ["main"] }
+name: CI • 3.12
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    tags:
+      - "v*"
+  pull_request:
+    branches: [ "main" ]
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+main
+main
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
+ci/codeql-basic
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
@@ -14,3 +36,52 @@ jobs:
           test -f requirements.txt && pip install -r requirements.txt || true
           pip install pytest || true
           pytest -q || echo "no tests yet"
+ ci/codeql-basic
+
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt', 'pyproject.toml', 'setup.cfg', 'setup.py', 'sdk/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Upgrade pip & wheel
+        run: python -m pip install -U pip wheel
+
+      # Инсталации – пазим твоите стъпки, но ги правим по-устойчиви
+      - name: Install project deps
+        run: |
+          # SDK като editable (както при теб)
+          pip install -e sdk
+          # Ако имаш root пакет с dev extras – опитваме, но не чупим ако липсва
+          pip install -e ".[dev]" || true
+          # Базови инструменти за тестове
+          pip install pytest cryptography
+
+      - name: Run tests (pytest)
+        env:
+          PYTHONPATH: sdk/src
+        run: |
+          mkdir -p reports
+          pytest -q --junitxml=reports/pytest.xml
+
+      - name: Upload test report (JUnit)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: reports/pytest.xml
+
+
+ main
+ main
