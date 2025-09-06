@@ -12,7 +12,6 @@ Foritech може да „вгражда“ PQC (Kyber) публичен клю�
 
 ### Предпоставки
 - Генериран Kyber ключ:
-  ```bash
   python scripts/kyber-keygen.py
   # ще създаде: ~/.foritech/keys/kyber768_pub.bin и kyber768_sec.bin
 
@@ -64,7 +63,6 @@ scripts/backup_file.sh sdk/src/foritech/cli/main.py
 ## Бърз старт
 
 1) Инсталация (editable):
-```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e .[dev]
 
@@ -115,7 +113,6 @@ pytest -q
 
 ## Makefile бързи цели
 
-```bash
 make gen-keys             # генерира Kyber ключове и подсказва FORITECH_SK
 make x509-self-spki       # self-signed X.509 с SPKI PQC extension
 make run-server           # стартира TLS-PQC демо сървър (ползва $(CERT)/$(KEY))
