@@ -1,0 +1,5 @@
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'      # ако трябва да се пуска и при таг

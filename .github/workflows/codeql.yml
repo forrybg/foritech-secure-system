@@ -1,3 +1,4 @@
+ci/release-bundle
 name: CodeQL
 on:
   push: { branches: [ "main" ] }
@@ -5,10 +6,41 @@ on:
   schedule:
     - cron: '0 3 * * 1'  # седмично
 
+ci/codeql-basic
+name: codeql
+on:
+  push: { branches: ["main"] }
+  pull_request: { branches: ["main"] }
+  schedule:
+    - cron: "0 5 * * 6"
+main
+
+name: CodeQL
+on:
+  push: { branches: [ "main" ] }
+  pull_request: { branches: [ "main" ] }
+  schedule:
+    - cron: '0 3 * * 1'  # седмично
+main
 jobs:
   analyze:
+    runs-on: ubuntu-latest
     permissions:
+ci/release-bundle
       contents: read
+
+ci/codeql-basic
+      security-events: write
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with: { languages: python }
+      contents: read
+main
       security-events: write
       actions: read
     runs-on: ubuntu-latest
@@ -18,6 +50,11 @@ jobs:
         with:
           languages: python
       - uses: github/codeql-action/autobuild@v3
+main
       - uses: github/codeql-action/analyze@v3
+ci/release-bundle
 
 if: ${{ !github.event.repository.private }}
+=======
+if: ${{ !github.event.repository.private }}
+main

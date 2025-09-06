@@ -1,0 +1,43 @@
+name: progress-digest
+on:
+  schedule:
+    - cron: "0 7 * * 6"  # every Saturday 07:00 UTC
+  workflow_dispatch: {}
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate digest
+        run: |
+          pip install gitpython tabulate
+          python - <<'PY'
+          import subprocess, datetime, os
+          from tabulate import tabulate
+          now = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+          def sh(cmd):
+            try:
+              return subprocess.check_output(cmd, shell=True, text=True)
+            except subprocess.CalledProcessError:
+              return ""
+          logs = sh("git log --since='7 days ago' --pretty=format:'- %h %ad %an %s' --date=short")
+          issues = sh("gh issue list --state all --limit 20")
+          out = ["# Weekly progress digest ("+now+")",
+                 "## Commits (7d)", logs or "_No commits_",
+                 "## Issues/PRs (last 20)", "```\\n"+(issues or "")+"\\n```"]
+          os.makedirs("docs", exist_ok=True)
+          with open("docs/PROGRESS.md","w") as f:
+            f.write("\\n\\n".join(out)+"\\n")
+          PY
+      - name: Commit digest
+        run: |
+          git config user.name "progress-bot"
+          git config user.email "bot@example"
+          git add docs/PROGRESS.md
+          git commit -m "chore(progress): weekly digest" || echo "no changes"
+          git push || true
