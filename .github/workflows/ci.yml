@@ -3,9 +3,12 @@ name: ci
 on:
   push: { branches: ["main"] }
   pull_request: { branches: ["main"] }
-=======
+ci/codeql-basic
+name: ci
+on:
+  push: { branches: ["main"] }
+  pull_request: { branches: ["main"] }
 name: CI • 3.12
-
 on:
   workflow_dispatch:
   push:
@@ -14,11 +17,10 @@ on:
       - "v*"
   pull_request:
     branches: [ "main" ]
-
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
-
+main
 main
 jobs:
   test:
@@ -34,7 +36,9 @@ ci/codeql-basic
           test -f requirements.txt && pip install -r requirements.txt || true
           pip install pytest || true
           pytest -q || echo "no tests yet"
-=======
+ ci/codeql-basic
+
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -79,4 +83,5 @@ ci/codeql-basic
           path: reports/pytest.xml
 
 
+ main
  main

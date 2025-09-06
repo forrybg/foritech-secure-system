@@ -1,10 +1,15 @@
 ci/codeql-basic
+
+ci/codeql-basic
+main
 name: codeql
 on:
   push: { branches: ["main"] }
   pull_request: { branches: ["main"] }
   schedule:
     - cron: "0 5 * * 6"
+ci/codeql-basic
+
 
 name: CodeQL
 on:
@@ -13,16 +18,25 @@ on:
   schedule:
     - cron: '0 3 * * 1'  # седмично
 main
+main
 jobs:
   analyze:
     runs-on: ubuntu-latest
     permissions:
 ci/codeql-basic
+
+ci/codeql-basic
+main
       security-events: write
       actions: read
       contents: read
     strategy:
       fail-fast: false
+ci/codeql-basic
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with: { languages: python }
     steps:
       - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v3
@@ -37,6 +51,7 @@ ci/codeql-basic
         with:
           languages: python
       - uses: github/codeql-action/autobuild@v3
+main
 main
       - uses: github/codeql-action/analyze@v3
 if: ${{ !github.event.repository.private }}
