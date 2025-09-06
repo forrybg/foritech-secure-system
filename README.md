@@ -144,9 +144,8 @@ make clean                # чисти локални артефакти (*.pem/
 4) стартира demo сървър + пуска клиента;
 5) качва `server.log` и `client.log` като артефакти.
 
-Ако `liboqs-python (oqs)` липсва на runner-а, job-ът се **скипва** (успешно), без да чупи таблото.
+>Ако `liboqs-python (oqs)` липсва на runner-а, job-ът се **скипва** (успешно), без да чупи таблото.
 
-=======
 [![CI](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/ci.yml/badge.svg)](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/codeql.yml/badge.svg)](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/codeql.yml)
 [![Progress digest](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/progress-digest.yml/badge.svg)](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/progress-digest.yml)
