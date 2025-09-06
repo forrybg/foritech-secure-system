@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # GitHub Actions версии
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule: { interval: "weekly" }
+
+  # Python зависимости в корена (ако имаш)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "cryptography"
+        # пример: игнорирай мажорни ъпдейти, ако не искаш внезапни чупения
+        update-types: [ "version-update:semver-major" ]
+
+  # Python зависимости за SDK
+  - package-ecosystem: "pip"
+    directory: "/sdk"
+    schedule: { interval: "weekly" }
+    open-pull-requests-limit: 10

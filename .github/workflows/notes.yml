@@ -1,6 +1,10 @@
 name: Notes (manual)
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'
+
 jobs:
   gen:
     runs-on: ubuntu-latest

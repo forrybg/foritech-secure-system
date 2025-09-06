@@ -1,7 +1,10 @@
 name: Demo • TLS-PQC smoke
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'
     inputs:
       python:
         description: Python version

@@ -10,6 +10,11 @@ on:
         description: Python version
         required: false
         default: '3.12'
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'      # ако трябва да се пуска и при таг
 
 jobs:
   smoke:

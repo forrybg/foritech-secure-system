@@ -1,28 +1,23 @@
 name: CodeQL
-
 on:
-  push:
-    branches: [ "main", "chore/**", "feature/**" ]
-  pull_request:
-    branches: [ "main" ]
+  push: { branches: [ "main" ] }
+  pull_request: { branches: [ "main" ] }
   schedule:
-    - cron: '0 2 * * 0'
+    - cron: '0 3 * * 1'  # седмично
 
 jobs:
   analyze:
     permissions:
-      actions: read
       contents: read
       security-events: write
+      actions: read
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'python' ]
     steps:
       - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: python
       - uses: github/codeql-action/autobuild@v3
       - uses: github/codeql-action/analyze@v3
+
+if: ${{ !github.event.repository.private }}
