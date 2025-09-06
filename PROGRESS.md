@@ -1,5 +1,73 @@
 # Foritech Secure System — Progress Log
 
+## 2025-09-06
+- chore(progress): nightly snapshot
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- chore(progress): auto-update PROGRESS.md
+- ci(release): add full bundle ZIP (code+docs, safe excludes)
+- chore(progress): auto-update PROGRESS.md
+- ci(release): auto-ZIP docs on tag
+- chore(progress): auto-update PROGRESS.md
+- Update README.md
+
+## 2025-09-05
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- chore(progress): auto-update PROGRESS.md
+- ci(release): add full bundle ZIP (code+docs, safe excludes)
+- chore(progress): auto-update PROGRESS.md
+- ci(release): auto-ZIP docs on tag
+- chore(progress): auto-update PROGRESS.md
+- Update README.md
+- chore(progress): nightly snapshot
+
+## 2025-09-04
+- chore(progress): auto-update PROGRESS.md
+- chore(progress): auto-update PROGRESS.md
+- ci(release): add full bundle ZIP (code+docs, safe excludes)
+- chore(progress): auto-update PROGRESS.md
+- ci(release): auto-ZIP docs on tag
+- chore(progress): auto-update PROGRESS.md
+- Update README.md
+- chore(progress): nightly snapshot
+- chore(progress): nightly snapshot
+
+## 2025-09-03
+- chore(progress): auto-update PROGRESS.md
+- ci(release): add full bundle ZIP (code+docs, safe excludes)
+- chore(progress): auto-update PROGRESS.md
+- ci(release): auto-ZIP docs on tag
+- chore(progress): auto-update PROGRESS.md
+- Update README.md
+- chore(progress): nightly snapshot
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+
+## 2025-09-03
+- ci(release): add full bundle ZIP (code+docs, safe excludes)
+- ci(release): auto-ZIP docs on tag
+- chore(progress): auto-update PROGRESS.md
+- Update README.md
+- chore(progress): nightly snapshot
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- chore(progress): auto-update PROGRESS.md
+- monitoring: add health probe + Prometheus textfile + systemd timer
+- chore(progress): auto-update PROGRESS.md
+
+## 2025-09-02
+- ci(release): auto-ZIP docs on tag
+- chore(progress): auto-update PROGRESS.md
+- Update README.md
+- chore(progress): nightly snapshot
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- chore(progress): auto-update PROGRESS.md
+- monitoring: add health probe + Prometheus textfile + systemd timer
+- chore(progress): auto-update PROGRESS.md
+- tls: fix tabs/spaces + GET /healthz; add bg helper (server_bg.sh)
+
 ## 2025-09-02
 - Update README.md
 - chore(progress): nightly snapshot
