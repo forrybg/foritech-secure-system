@@ -1,5 +1,27 @@
 # Foritech Secure System — Progress Log
 
+## 2025-09-06
+- chore(progress): nightly snapshot
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- chore(progress): auto-update PROGRESS.md
+- ci(release): add full bundle ZIP (code+docs, safe excludes)
+- chore(progress): auto-update PROGRESS.md
+- ci(release): auto-ZIP docs on tag
+- chore(progress): auto-update PROGRESS.md
+- Update README.md
+
+## 2025-09-05
+- chore(progress): nightly snapshot
+- chore(progress): auto-update PROGRESS.md
+- chore(progress): auto-update PROGRESS.md
+- ci(release): add full bundle ZIP (code+docs, safe excludes)
+- chore(progress): auto-update PROGRESS.md
+- ci(release): auto-ZIP docs on tag
+- chore(progress): auto-update PROGRESS.md
+- Update README.md
+- chore(progress): nightly snapshot
+
 ## 2025-09-04
 - chore(progress): auto-update PROGRESS.md
 - chore(progress): auto-update PROGRESS.md
