@@ -3,7 +3,6 @@ name: ci
 on:
   push: { branches: ["main"] }
   pull_request: { branches: ["main"] }
-=======
 name: CI • 3.12
 
 on:
@@ -19,12 +18,17 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+ci/release-bundle
+
+main
 main
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
+ci/release-bundle
+
 ci/codeql-basic
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,7 +38,8 @@ ci/codeql-basic
           test -f requirements.txt && pip install -r requirements.txt || true
           pip install pytest || true
           pytest -q || echo "no tests yet"
-=======
+
+main
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -79,4 +84,7 @@ ci/codeql-basic
           path: reports/pytest.xml
 
 
+ci/release-bundle
+
  main
+main
