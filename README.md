@@ -1,3 +1,6 @@
+[![CI](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/ci.yml/badge.svg)](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/codeql.yml/badge.svg)](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/codeql.yml)
+[![Progress digest](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/progress-digest.yml/badge.svg)](https://github.com/foritech-secure-system/foritech-secure-system/actions/workflows/progress-digest.yml)
 # Foritech Secure System
 
 Open-source toolkit for PQC-ready PKI/TLS with optional DID/SSI + Zero-Knowledge login.
